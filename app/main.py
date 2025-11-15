@@ -6,7 +6,7 @@ This module implements the main FastAPI application with dual operation modes:
 2. Real-time Mode: WebSocket-based continuous operation mimicking a real system
 """
 
-from typing import Dict
+from typing import Any, Dict
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -296,7 +296,7 @@ async def get_simulation_status():  # -> Dict[str, any]:
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
+async def health_check() -> Dict[str, Any]:
     """
     Health check endpoint for monitoring service availability.
 
