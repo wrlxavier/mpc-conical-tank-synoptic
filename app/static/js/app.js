@@ -14,8 +14,18 @@
     /**
      * Initialize application
      */
-    function init() {
+    async function init() {
         console.log('Initializing Tank Simulation Application');
+        
+        // Initialize SVG Synoptic
+        const svgInitialized = await SVGSynoptic.initialize('synoptic-board', 'data-overlays');
+        
+        if (svgInitialized) {
+            document.getElementById('synoptic-board').classList.add('loaded');
+            console.log('SVG Synoptic initialized successfully');
+        } else {
+            console.warn('SVG Synoptic initialization failed');
+        }
         
         // Set up mode switching
         setupModeSwitch();
