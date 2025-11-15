@@ -72,6 +72,11 @@ const UI = (() => {
         if (variables.tank_e_concentration !== undefined) {
             updateDataCard('data-tank-e-conc', variables.tank_e_concentration, 1);
         }
+
+        // Update SVG overlays if available
+        if (typeof SVGSynoptic !== 'undefined') {
+            SVGSynoptic.updateOverlays(variables);
+        }
     }
 
     /**
@@ -82,6 +87,11 @@ const UI = (() => {
         cards.forEach(card => {
             card.textContent = '--';
         });
+
+        // Reset SVG overlays if available
+        if (typeof SVGSynoptic !== 'undefined') {
+            SVGSynoptic.resetOverlays();
+        }
     }
 
     /**
