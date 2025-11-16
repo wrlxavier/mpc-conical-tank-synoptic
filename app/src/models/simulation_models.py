@@ -1,14 +1,13 @@
 """
 Data models for simulation requests and responses.
 
-This module defines Pydantic models for API request/response validation
-and documentation, representing the physical and control parameters of
-the 5-tank process system.
+This module defines Pydantic models for both batch and real-time operation modes.
 """
 
 from typing import List, Optional, Dict
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
+from enum import Enum
 
 
 class TankState(BaseModel):
@@ -101,9 +100,42 @@ class ControlSequence(BaseModel):
     tank_e_control: ControlInputs
 
 
+class StepInput(BaseModel):
+    """
+    Step change in setpoint at specified time.
+
+    Attributes:
+        time: Time in seconds when step occurs.
+        tank_id: Tank identifier (e.g., 'tank_c').
+        variable: Variable to change ('level' or 'concentration').
+        value: Target value after step.
+    """
+
+    time: float = Field(..., ge=0.0, description="Step application time in seconds")
+    tank_id: str = Field(..., description="Tank identifier")
+    variable: str = Field(..., description="Variable to change")
+    value: float = Field(..., description="Target setpoint value")
+
+    @validator("tank_id")
+    def validate_tank_id(cls, v: str) -> str:
+        """Validate tank identifier."""
+        allowed = ["tank_a", "tank_b", "tank_c", "tank_d", "tank_e"]
+        if v not in allowed:
+            raise ValueError(f"Tank ID must be one of {allowed}")
+        return v
+
+    @validator("variable")
+    def validate_variable(cls, v: str) -> str:
+        """Validate variable name."""
+        allowed = ["level", "concentration"]
+        if v not in allowed:
+            raise ValueError(f"Variable must be one of {allowed}")
+        return v
+
+
 class SimulationConfig(BaseModel):
     """
-    Configuration parameters for simulation execution.
+    Configuration parameters for batch simulation execution.
 
     Attributes:
         simulation_id: Unique identifier for this simulation run.
@@ -136,20 +168,20 @@ class SimulationConfig(BaseModel):
 
 class SimulationRequest(BaseModel):
     """
-    Complete simulation request payload.
+    Complete batch simulation request payload.
 
     Attributes:
         initial_conditions: Starting states for all tanks.
         control_inputs: Control signals to be applied during simulation.
         simulation_config: Simulation execution parameters.
-        reference_setpoints: Optional reference trajectories for controlled variables.
+        step_inputs: Optional list of step changes in setpoints.
     """
 
     initial_conditions: InitialConditions
     control_inputs: ControlSequence
     simulation_config: SimulationConfig
-    reference_setpoints: Optional[Dict[str, List[float]]] = Field(
-        None, description="Optional reference trajectories for MPC"
+    step_inputs: Optional[List[StepInput]] = Field(
+        None, description="Step changes in setpoints during simulation"
     )
 
 
@@ -206,3 +238,97 @@ class SimulationResponse(BaseModel):
     time_series: Dict[str, TimeSeriesData]
     metadata: SimulationMetadata
     status: str = Field(..., description="Execution status message")
+
+
+# ========== Real-Time Mode Models ==========
+
+
+class EquilibriumPoint(BaseModel):
+    """
+    Equilibrium operating point for real-time simulation.
+
+    Attributes:
+        levels: Dictionary mapping tank IDs to equilibrium levels.
+        concentrations: Dictionary mapping process tank IDs to equilibrium concentrations.
+        controls: Dictionary mapping control signals to equilibrium values.
+    """
+
+    levels: Dict[str, float] = Field(..., description="Equilibrium levels for all tanks")
+    concentrations: Dict[str, float] = Field(
+        ..., description="Equilibrium concentrations for process tanks"
+    )
+    controls: Dict[str, float] = Field(..., description="Equilibrium control signals")
+
+
+class RealTimeConfig(BaseModel):
+    """
+    Configuration for real-time simulation mode.
+
+    Attributes:
+        equilibrium_point: Operating point where simulation starts.
+        sampling_interval: Data transmission interval in seconds.
+        enable_noise: Whether to add measurement noise.
+        noise_level: Standard deviation of measurement noise (if enabled).
+    """
+
+    equilibrium_point: EquilibriumPoint
+    sampling_interval: float = Field(
+        0.5,
+        gt=0.0,
+        le=5.0,
+        description="Data sampling/transmission interval in seconds",
+    )
+    enable_noise: bool = Field(False, description="Enable measurement noise simulation")
+    noise_level: float = Field(
+        0.01, ge=0.0, le=0.1, description="Noise standard deviation (normalized)"
+    )
+
+
+class SetpointCommand(BaseModel):
+    """
+    Setpoint change command for real-time mode.
+
+    Attributes:
+        tank_id: Tank identifier.
+        variable: Variable to change ('level' or 'concentration').
+        value: New setpoint value.
+        timestamp: Optional client timestamp.
+    """
+
+    tank_id: str = Field(..., description="Tank identifier")
+    variable: str = Field(..., description="Variable to control")
+    value: float = Field(..., description="New setpoint value")
+    timestamp: Optional[float] = Field(None, description="Client timestamp")
+
+    @validator("tank_id")
+    def validate_tank_id(cls, v: str) -> str:
+        """Validate tank identifier."""
+        allowed = ["tank_a", "tank_b", "tank_c", "tank_d", "tank_e"]
+        if v not in allowed:
+            raise ValueError(f"Tank ID must be one of {allowed}")
+        return v
+
+    @validator("variable")
+    def validate_variable(cls, v: str) -> str:
+        """Validate variable name."""
+        allowed = ["level", "concentration"]
+        if v not in allowed:
+            raise ValueError(f"Variable must be one of {allowed}")
+        return v
+
+
+class RealTimeState(BaseModel):
+    """
+    Current state snapshot for real-time mode.
+
+    Attributes:
+        timestamp: Server timestamp in seconds since epoch.
+        variables: Dictionary of current variable values.
+        setpoints: Dictionary of current setpoint values.
+        controls: Dictionary of current control signal values.
+    """
+
+    timestamp: float = Field(..., description="Server timestamp")
+    variables: Dict[str, float] = Field(..., description="Current process variables")
+    setpoints: Dict[str, float] = Field(..., description="Current setpoints")
+    controls: Dict[str, float] = Field(..., description="Current control signals")

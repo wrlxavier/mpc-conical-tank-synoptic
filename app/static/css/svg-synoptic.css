@@ -1,0 +1,284 @@
+/* SVG Synoptic Styles */
+
+#synoptic-board {
+    position: relative;
+    width: 100%;
+    min-height: 500px;
+    /* background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); */
+    background: #D1D7E3;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#synoptic-board svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 800px;
+}
+
+#data-overlays {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.svg-overlay {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.5);
+
+    /* border: 2px solid #2c3e50; */
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-width: 120px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    /* Quero todo os tipo de efeitos de vidro fosco */
+
+    backdrop-filter: blur(5px) saturate(150%);
+    transition: all 0.3s ease;
+    opacity: 0.9;
+    pointer-events: auto;
+}
+
+.svg-overlay:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 1;
+    z-index: 10;
+}
+
+.svg-overlay.active {
+    /* border-color: #27ae60; */
+    /* border-color: #0eff42; */
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.svg-overlay.highlighted {
+    border-color: #f39c12;
+    border-width: 3px;
+    box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(243, 156, 18, 0.8);
+    }
+}
+
+.overlay-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #34495e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.overlay-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 2px;
+}
+
+.overlay-unit {
+    font-size: 10px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* Default positioning - adjust these values based on your SVG layout */
+.svg-overlay-tank-a {
+    top: 19%;
+    left: 34%;
+}
+
+.svg-overlay-tank-b {
+    top: 19%;
+    right: 32%;
+}
+
+.svg-overlay-tank-c {
+    /* Use apenas estilos comuns, como cor de fundo, borda, etc. */
+    /* Evite definir top/left aqui se os IDs já fazem isso */
+}
+
+.svg-overlay-tank-d {
+    /* top: 40%;
+    left: 50%;
+    transform: translateX(-50%); */
+}
+
+.svg-overlay-tank-e {
+    /* top: 40%;
+    right: 10%; */
+}
+
+/* Specific overlay positioning */
+#overlay-tank-c-level {
+    top: 74%;
+    left: 1%;
+    /* Estilos específicos para o nível */
+}
+
+#overlay-tank-c-conc {
+    top: 70%;
+    left: 19%;
+    /* Estilos específicos para a concentração */
+}
+
+#overlay-tank-d-level {
+    top: 74%;
+    left: 40%;
+    transform: translateX(-50%);
+}
+
+#overlay-tank-d-conc {
+    top: 70%;
+    left: 58%;
+    transform: translateX(-50%);
+}
+
+#overlay-tank-e-level {
+    top: 74%;
+    right: 21%;
+}
+
+#overlay-tank-e-conc {
+    top: 70%;
+    right: 3%;
+}
+
+#overlay-tank-a-supply {
+    top: 15%;
+    left: 3%;
+}
+
+#overlay-tank-b-supply {
+    top: 15%;
+    right: 1%;
+}
+
+#overlay-tank-c-water-pump {
+    top: 45%;
+    left: 5%;
+}
+
+#overlay-tank-c-brine-pump {
+    top: 45%;
+    left: 18%;
+}
+
+#overlay-tank-c-outlet-valve {
+    top: 87%;
+    left: 3%;
+}
+
+#overlay-tank-d-water-pump {
+    top: 45%;
+    left: 44%;
+    transform: translateX(-50%);
+}
+
+#overlay-tank-d-brine-pump {
+    top: 45%;
+    left: 57%;
+    transform: translateX(-50%);
+}
+
+#overlay-tank-d-outlet-valve {
+    top: 87%;
+    left: 42%;
+    transform: translateX(-50%);
+}
+
+#overlay-tank-e-water-pump {
+    top: 45%;
+    right: 17%;
+}
+
+#overlay-tank-e-brine-pump {
+    top: 45%;
+    right: 4%;
+}
+
+#overlay-tank-e-outlet-valve {
+    top: 87%;
+    right: 18%;
+}
+
+/* Placeholder styles */
+.placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 500px;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+}
+
+.placeholder p {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.placeholder small {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+/* Hide placeholder when SVG is loaded */
+#synoptic-board.loaded .placeholder {
+    display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .svg-overlay {
+        min-width: 100px;
+        padding: 6px 10px;
+    }
+
+    .overlay-label {
+        font-size: 10px;
+    }
+
+    .overlay-value {
+        font-size: 16px;
+    }
+
+    .overlay-unit {
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 768px) {
+    .svg-overlay {
+        min-width: 80px;
+        padding: 4px 8px;
+    }
+
+    .overlay-label {
+        font-size: 9px;
+    }
+
+    .overlay-value {
+        font-size: 14px;
+    }
+}
