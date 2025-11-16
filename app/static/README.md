@@ -10,12 +10,14 @@ The frontend is built with vanilla JavaScript using a modular architecture:
 app/static/
 ├── index.html          # Main HTML structure
 ├── css/
-│   └── styles.css      # Responsive styling
+│   ├── styles.css      # Responsive styling
+│   └── svg-synoptic.css # SVG overlay styling
 └── js/
     ├── api.js          # HTTP API communication module
     ├── websocket.js    # WebSocket real-time communication
     ├── ui.js           # DOM manipulation and data display
-    └── app.js          # Main application coordinator
+    ├── svg-synoptic.js # SVG synoptic overlay module
+    └── app.js          # Main application coordinator (initializes SVGSynoptic)
 ```
 
 ## 📦 Modules
@@ -99,16 +101,27 @@ UI.updateAllDataCards({
 UI.showStatus('batch-status', 'Simulation completed!', 'success');
 ```
 
-### 4. Main Application (`app.js`)
+### 4. SVG Synoptic Module (`svg-synoptic.js`)
 
-Coordinates all modules and manages application workflow.
+Handles SVG-based process visualization:
 
-**Key Responsibilities:**
-- Initialize all event listeners
-- Manage mode switching (batch ↔ real-time)
-- Build request payloads from form inputs
-- Handle WebSocket lifecycle
-- Update UI based on backend responses
+- Loads `tank_process.svg` into the synoptic board.
+- Creates overlay elements as defined in `overlayConfig` (process variables and actuator controls).
+- Updates overlays synchronously with `UI.updateAllDataCards()` and `SVGSynoptic.updateOverlays()`.
+- Overlay positions and styles are managed in `svg-synoptic.css`.
+
+**Initialization:**  
+`app.js` calls `SVGSynoptic.initialize()` during startup. On success, the container `#synoptic-board` receives the class `loaded` (see `svg-synoptic.css` for placeholder hiding).
+
+**Overlay Lifecycle:**  
+- Overlays are created on SVG load.
+- Updated via `updateOverlay` and `updateControlOverlay`.
+- Reset via `SVGSynoptic.resetOverlays()` (called by `UI.resetDataCards()`).
+
+**Control Scaling:**  
+Actuator controls are displayed as percentages:  
+$u_{\%} = 100 \times u$  
+Scaling is performed in `updateControlOverlay`.
 
 ## 📊 Operation Modes
 
@@ -132,12 +145,9 @@ Data Cards ← UI.displayBatchResults() ←────────────�
 ### Real-time Mode
 
 **Workflow:**
-1. User configures equilibrium point and sampling interval
-2. Clicks "Initialize" → POST to `/simulation/initialize`
-3. Clicks "Connect" → WebSocket connection to `/ws/realtime`
-4. Backend sends state updates at configured interval
-5. User can send setpoint commands during operation
-6. Data cards update in real-time
+1. `initializeRealTime()` (HTTP) sends payload built by `buildRealTimeConfig`.
+2. `WebSocketManager.connect()` (see `websocket.js`) establishes connection and receives `state_update` messages.
+3. Each update triggers `UI.updateAllDataCards()` and `SVGSynoptic.updateOverlays()` for synchronized display.
 
 **Data Flow:**
 ```
@@ -147,7 +157,8 @@ Initialize → API.initializeRealTime() → Backend
                                             ↓
 WebSocket ←─────── state_update ←─────── Real-time Loop
     ↓                                       ↑
-UI Update                            setpoint commands
+UI.updateAllDataCards() → SVGSynoptic.updateOverlays()
+setpoint commands
 ```
 
 ## 🔧 Customization
@@ -173,25 +184,24 @@ function updateAllDataCards(variables) {
 }
 ```
 
-### Adding New Control Parameters
+### Adding New Overlays
 
-1. **Add form input** in HTML:
-```html
-<label>
-    New Parameter:
-    <input type="number" id="new-param" value="0" step="0.1">
-</label>
-```
-
-2. **Include in request builder** (`app.js`):
+1. **In `svg-synoptic.js`**, add to `overlayConfig` array:
 ```javascript
-function buildBatchSimulationParams() {
-    return {
-        // ... existing params ...
-        new_parameter: parseFloat(document.getElementById('new-param').value)
-    };
+{ id: 'overlay-tank-c-water-pump', label: 'Tank C Water Pump', unit: '%', tank: 'C' }
+```
+2. **Add positioning in `svg-synoptic.css`**:
+```css
+#overlay-tank-c-water-pump {
+    top: 40%;
+    left: 12%;
 }
 ```
+3. **Update in `SVGSynoptic.updateOverlays()`**:
+```javascript
+updateControlOverlay('overlay-tank-c-water-pump', controls.tank_c_water_pump);
+```
+*Note: Control values are multiplied by 100 before display.*
 
 ### Styling Customization
 
@@ -281,6 +291,11 @@ The frontend implements comprehensive error handling:
 - [ ] Send setpoint command
 - [ ] Test pause/resume/reset
 - [ ] Disconnect and reconnect
+
+**SVG Synoptic:**
+- [ ] Check that `#synoptic-board` receives the `loaded` class after `SVGSynoptic.initialize()`
+- [ ] Confirm overlays update with process and control data
+- [ ] Ensure `SVGSynoptic.resetOverlays()` is called when `UI.resetDataCards()` executes
 
 ### Browser Console
 
