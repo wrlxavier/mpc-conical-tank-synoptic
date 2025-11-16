@@ -4,7 +4,8 @@
     position: relative;
     width: 100%;
     min-height: 500px;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    /* background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); */
+    background: #D1D7E3;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -28,12 +29,17 @@
 
 .svg-overlay {
     position: absolute;
-    background: rgba(255, 255, 255, 0.95);
-    border: 2px solid #2c3e50;
+    background: rgba(255, 255, 255, 0.5);
+
+    /* border: 2px solid #2c3e50; */
     border-radius: 6px;
     padding: 8px 12px;
     min-width: 120px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    /* Quero todo os tipo de efeitos de vidro fosco */
+
+    backdrop-filter: blur(5px) saturate(150%);
     transition: all 0.3s ease;
     opacity: 0.9;
     pointer-events: auto;
@@ -47,8 +53,9 @@
 }
 
 .svg-overlay.active {
-    border-color: #27ae60;
-    background: rgba(255, 255, 255, 0.98);
+    /* border-color: #27ae60; */
+    /* border-color: #0eff42; */
+    background: rgba(255, 255, 255, 0.95);
 }
 
 .svg-overlay.highlighted {
@@ -59,9 +66,12 @@
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
     }
+
     50% {
         box-shadow: 0 0 25px rgba(243, 156, 18, 0.8);
     }
@@ -92,62 +102,122 @@
 
 /* Default positioning - adjust these values based on your SVG layout */
 .svg-overlay-tank-a {
-    top: 10%;
-    left: 5%;
+    top: 19%;
+    left: 34%;
 }
 
 .svg-overlay-tank-b {
-    top: 10%;
-    right: 5%;
+    top: 19%;
+    right: 32%;
 }
 
 .svg-overlay-tank-c {
-    top: 40%;
-    left: 10%;
+    /* Use apenas estilos comuns, como cor de fundo, borda, etc. */
+    /* Evite definir top/left aqui se os IDs já fazem isso */
 }
 
 .svg-overlay-tank-d {
-    top: 40%;
+    /* top: 40%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%); */
 }
 
 .svg-overlay-tank-e {
-    top: 40%;
-    right: 10%;
+    /* top: 40%;
+    right: 10%; */
 }
 
 /* Specific overlay positioning */
 #overlay-tank-c-level {
-    top: 35%;
-    left: 8%;
+    top: 74%;
+    left: 1%;
+    /* Estilos específicos para o nível */
 }
 
 #overlay-tank-c-conc {
-    top: 50%;
-    left: 8%;
+    top: 70%;
+    left: 19%;
+    /* Estilos específicos para a concentração */
 }
 
 #overlay-tank-d-level {
-    top: 35%;
-    left: 50%;
+    top: 74%;
+    left: 40%;
     transform: translateX(-50%);
 }
 
 #overlay-tank-d-conc {
-    top: 50%;
-    left: 50%;
+    top: 70%;
+    left: 58%;
     transform: translateX(-50%);
 }
 
 #overlay-tank-e-level {
-    top: 35%;
-    right: 8%;
+    top: 74%;
+    right: 21%;
 }
 
 #overlay-tank-e-conc {
-    top: 50%;
-    right: 8%;
+    top: 70%;
+    right: 3%;
+}
+
+#overlay-tank-a-supply {
+    top: 15%;
+    left: 3%;
+}
+
+#overlay-tank-b-supply {
+    top: 15%;
+    right: 1%;
+}
+
+#overlay-tank-c-water-pump {
+    top: 45%;
+    left: 5%;
+}
+
+#overlay-tank-c-brine-pump {
+    top: 45%;
+    left: 18%;
+}
+
+#overlay-tank-c-outlet-valve {
+    top: 87%;
+    left: 3%;
+}
+
+#overlay-tank-d-water-pump {
+    top: 45%;
+    left: 44%;
+    transform: translateX(-50%);
+}
+
+#overlay-tank-d-brine-pump {
+    top: 45%;
+    left: 57%;
+    transform: translateX(-50%);
+}
+
+#overlay-tank-d-outlet-valve {
+    top: 87%;
+    left: 42%;
+    transform: translateX(-50%);
+}
+
+#overlay-tank-e-water-pump {
+    top: 45%;
+    right: 17%;
+}
+
+#overlay-tank-e-brine-pump {
+    top: 45%;
+    right: 4%;
+}
+
+#overlay-tank-e-outlet-valve {
+    top: 87%;
+    right: 18%;
 }
 
 /* Placeholder styles */

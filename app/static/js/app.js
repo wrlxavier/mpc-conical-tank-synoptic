@@ -3,7 +3,7 @@
  * Initializes and coordinates all modules for the tank simulation interface
  */
 
-(function() {
+(function () {
     'use strict';
 
     // Application state
@@ -16,26 +16,26 @@
      */
     async function init() {
         console.log('Initializing Tank Simulation Application');
-        
+
         // Initialize SVG Synoptic
         const svgInitialized = await SVGSynoptic.initialize('synoptic-board', 'data-overlays');
-        
+
         if (svgInitialized) {
             document.getElementById('synoptic-board').classList.add('loaded');
             console.log('SVG Synoptic initialized successfully');
         } else {
             console.warn('SVG Synoptic initialization failed');
         }
-        
+
         // Set up mode switching
         setupModeSwitch();
-        
+
         // Set up batch simulation
         setupBatchSimulation();
-        
+
         // Set up real-time simulation
         setupRealTimeSimulation();
-        
+
         // Perform health check
         performHealthCheck();
     }
@@ -303,14 +303,12 @@
     function handleWebSocketMessage(data) {
         if (data.type === 'initial_state') {
             console.log('Received initial state:', data.data);
-            if (data.data.variables) {
-                UI.updateAllDataCards(data.data.variables);
-            }
+            const { variables = {}, controls = {} } = data.data || {};
+            UI.updateAllDataCards(variables, controls);
         } else if (data.type === 'state_update') {
             // Update data display in real-time
-            if (data.data.variables) {
-                UI.updateAllDataCards(data.data.variables);
-            }
+            const { variables = {}, controls = {} } = data.data || {};
+            UI.updateAllDataCards(variables, controls);
         }
     }
 

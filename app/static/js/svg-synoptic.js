@@ -23,7 +23,7 @@ const SVGSynoptic = (() => {
         }
 
         try {
-            await loadSVG('/static/imgs/tank_process.svg');
+            await loadSVG('../static/imgs/tank_process.svg');
             createOverlays();
             return true;
         } catch (error) {
@@ -39,14 +39,24 @@ const SVGSynoptic = (() => {
     async function loadSVG(svgPath) {
         const response = await fetch(svgPath);
         const svgText = await response.text();
-        
-        svgContainer.innerHTML = svgText;
-        svgElement = svgContainer.querySelector('svg');
-        
-        if (svgElement) {
-            svgElement.style.width = '100%';
-            svgElement.style.height = 'auto';
-            svgElement.style.display = 'block';
+
+        if (!svgContainer) return;
+
+        const temp = document.createElement('div');
+        temp.innerHTML = svgText.trim();
+        const loadedSVG = temp.firstElementChild;
+
+        if (loadedSVG) {
+            loadedSVG.style.width = '100%';
+            loadedSVG.style.height = 'auto';
+            loadedSVG.style.display = 'block';
+
+            const overlays = document.getElementById('data-overlays');
+            svgContainer.innerHTML = '';
+            svgContainer.appendChild(loadedSVG);
+            if (overlays) {
+                svgContainer.appendChild(overlays);
+            }
         }
     }
 
@@ -64,7 +74,18 @@ const SVGSynoptic = (() => {
             { id: 'overlay-tank-d-level', label: 'Tank D Level', unit: 'm', tank: 'D' },
             { id: 'overlay-tank-d-conc', label: 'Tank D Conc.', unit: 'kg/m³', tank: 'D' },
             { id: 'overlay-tank-e-level', label: 'Tank E Level', unit: 'm', tank: 'E' },
-            { id: 'overlay-tank-e-conc', label: 'Tank E Conc.', unit: 'kg/m³', tank: 'E' }
+            { id: 'overlay-tank-e-conc', label: 'Tank E Conc.', unit: 'kg/m³', tank: 'E' },
+            { id: 'overlay-tank-a-supply', label: 'Tank A Supply', unit: '%', tank: 'A' },
+            { id: 'overlay-tank-b-supply', label: 'Tank B Supply', unit: '%', tank: 'B' },
+            { id: 'overlay-tank-c-water-pump', label: 'C Water Pump', unit: '%', tank: 'C' },
+            { id: 'overlay-tank-c-brine-pump', label: 'C Brine Pump', unit: '%', tank: 'C' },
+            { id: 'overlay-tank-c-outlet-valve', label: 'C Outlet Valve', unit: '%', tank: 'C' },
+            { id: 'overlay-tank-d-water-pump', label: 'D Water Pump', unit: '%', tank: 'D' },
+            { id: 'overlay-tank-d-brine-pump', label: 'D Brine Pump', unit: '%', tank: 'D' },
+            { id: 'overlay-tank-d-outlet-valve', label: 'D Outlet Valve', unit: '%', tank: 'D' },
+            { id: 'overlay-tank-e-water-pump', label: 'E Water Pump', unit: '%', tank: 'E' },
+            { id: 'overlay-tank-e-brine-pump', label: 'E Brine Pump', unit: '%', tank: 'E' },
+            { id: 'overlay-tank-e-outlet-valve', label: 'E Outlet Valve', unit: '%', tank: 'E' }
         ];
 
         overlayContainer.innerHTML = '';
@@ -86,7 +107,7 @@ const SVGSynoptic = (() => {
      * Update overlay values with process data
      * @param {object} variables - Process variables object
      */
-    function updateOverlays(variables) {
+    function updateOverlays(variables = {}, controls = {}) {
         updateOverlay('overlay-tank-a-level', variables.tank_a_level, 2);
         updateOverlay('overlay-tank-b-level', variables.tank_b_level, 2);
         updateOverlay('overlay-tank-c-level', variables.tank_c_level, 2);
@@ -95,6 +116,18 @@ const SVGSynoptic = (() => {
         updateOverlay('overlay-tank-d-conc', variables.tank_d_concentration, 1);
         updateOverlay('overlay-tank-e-level', variables.tank_e_level, 2);
         updateOverlay('overlay-tank-e-conc', variables.tank_e_concentration, 1);
+
+        updateControlOverlay('overlay-tank-a-supply', controls.tank_a_supply_valve);
+        updateControlOverlay('overlay-tank-b-supply', controls.tank_b_supply_valve);
+        updateControlOverlay('overlay-tank-c-water-pump', controls.tank_c_water_pump);
+        updateControlOverlay('overlay-tank-c-brine-pump', controls.tank_c_brine_pump);
+        updateControlOverlay('overlay-tank-c-outlet-valve', controls.tank_c_outlet_valve);
+        updateControlOverlay('overlay-tank-d-water-pump', controls.tank_d_water_pump);
+        updateControlOverlay('overlay-tank-d-brine-pump', controls.tank_d_brine_pump);
+        updateControlOverlay('overlay-tank-d-outlet-valve', controls.tank_d_outlet_valve);
+        updateControlOverlay('overlay-tank-e-water-pump', controls.tank_e_water_pump);
+        updateControlOverlay('overlay-tank-e-brine-pump', controls.tank_e_brine_pump);
+        updateControlOverlay('overlay-tank-e-outlet-valve', controls.tank_e_outlet_valve);
     }
 
     /**
@@ -108,13 +141,21 @@ const SVGSynoptic = (() => {
         if (!overlay) return;
 
         const valueElement = overlay.querySelector('.overlay-value');
-        if (valueElement && value !== undefined && value !== null) {
+        if (valueElement && value !== undefined && value !== null && !Number.isNaN(value)) {
             valueElement.textContent = typeof value === 'number' ? value.toFixed(decimals) : value;
             overlay.classList.add('active');
         } else if (valueElement) {
             valueElement.textContent = '--';
             overlay.classList.remove('active');
         }
+    }
+
+    function updateControlOverlay(overlayId, value, decimals = 0) {
+        if (value === undefined || value === null) {
+            updateOverlay(overlayId, undefined, decimals);
+            return;
+        }
+        updateOverlay(overlayId, value * 100, decimals);
     }
 
     /**
@@ -139,7 +180,7 @@ const SVGSynoptic = (() => {
     function highlightTank(tankId, highlight) {
         const tankClass = tankId.replace('_', '-');
         const overlays = document.querySelectorAll(`.svg-overlay-${tankClass}`);
-        
+
         overlays.forEach(overlay => {
             if (highlight) {
                 overlay.classList.add('highlighted');

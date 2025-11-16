@@ -20,6 +20,7 @@ The SVG synoptic module enables dynamic visualization of the tank process by loa
   - Tank C Level & Concentration
   - Tank D Level & Concentration
   - Tank E Level & Concentration
+- Additional overlays visualize the normalized control inputs (u) for each tank (supply valves, pumps, outlet valves) so that actuator demands are visible alongside process variables
 - Overlays update automatically with process data
 - Visual feedback with color changes when data is active
 
@@ -45,7 +46,7 @@ Core module responsible for:
 
 **Key Functions:**
 - `initialize(svgContainerId, overlayContainerId)`: Initialize the module
-- `updateOverlays(variables)`: Update all overlays with new data
+- `updateOverlays(variables, controls)`: Update all overlays with process and control data
 - `resetOverlays()`: Reset overlays to default state
 - `highlightTank(tankId, highlight)`: Highlight specific tank overlays
 

@@ -7,7 +7,8 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+    background: #F2F2F2;
     color: #333;
     line-height: 1.6;
 }
@@ -29,12 +30,19 @@ header {
 
 header h1 {
     color: #2d3748;
-    margin-bottom: 15px;
+    font-weight: 600;
 }
+
+.header-page {}
 
 .mode-selector {
     display: flex;
+    padding: 20px 0;
+    padding-bottom: 40px;
+    background-color: #fff;
     gap: 10px;
+    position: absolute;
+    margin-top: -20px;
 }
 
 .mode-btn {
@@ -125,6 +133,7 @@ main {
 
 .mode-controls {
     display: none;
+    padding-top: 100px;
 }
 
 .mode-controls.active {
@@ -284,6 +293,19 @@ main {
     border-bottom: 2px solid #e2e8f0;
 }
 
+.panel-subtitle {
+    color: #4a5568;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 20px 0 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.panel-subtitle:first-of-type {
+    margin-top: 0;
+}
+
 .data-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -297,6 +319,10 @@ main {
     text-align: center;
     color: white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.control-card {
+    background: linear-gradient(135deg, #0f9b0f 0%, #00b09b 100%);
 }
 
 .data-card h3 {
@@ -351,7 +377,7 @@ main {
     main {
         grid-template-columns: 1fr;
     }
-    
+
     .control-panel {
         max-height: none;
     }
@@ -361,7 +387,7 @@ main {
     .mode-selector {
         flex-direction: column;
     }
-    
+
     .data-grid {
         grid-template-columns: 1fr;
     }

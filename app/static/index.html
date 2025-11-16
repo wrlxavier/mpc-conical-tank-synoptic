@@ -5,22 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tank Simulation Synoptic - Dual Mode</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="/static/css/svg-synoptic.css">
+    <link rel="stylesheet" href="../static/css/styles.css">
+    <link rel="stylesheet" href="../static/css/svg-synoptic.css">
 </head>
 
 <body>
     <div class="container">
-        <header>
+        <header class="header-page">
             <h1>Tank Process Simulation - Synoptic Interface</h1>
-            <div class="mode-selector">
+            <!-- <div class="mode-selector">
                 <button id="mode-batch" class="mode-btn active" data-mode="batch">
-                    <span class="icon">⏱️</span> Batch Simulation
+                    <span class="icon"></span> Batch Simulation
                 </button>
                 <button id="mode-realtime" class="mode-btn" data-mode="realtime">
-                    <span class="icon">⚡</span> Real-time Mode
+                    <span class="icon"></span> Real-time Mode
                 </button>
-            </div>
+            </div> -->
         </header>
 
         <main>
@@ -40,9 +40,17 @@
             <!-- Control Panels -->
             <aside class="control-panel">
                 <!-- Batch Mode Controls -->
+                <div class="mode-selector">
+                    <button id="mode-batch" class="mode-btn active" data-mode="batch">
+                        <span class="icon"></span> Batch Simulation
+                    </button>
+                    <button id="mode-realtime" class="mode-btn" data-mode="realtime">
+                        <span class="icon"></span> Real-time Mode
+                    </button>
+                </div>
                 <div id="batch-controls" class="mode-controls active">
                     <h2>Batch Simulation</h2>
-                    
+
                     <div class="control-group">
                         <h3>Simulation Configuration</h3>
                         <label>
@@ -71,18 +79,24 @@
                         <h3>Initial Conditions</h3>
                         <div class="tank-config">
                             <h4>Tank C</h4>
-                            <label>Level (m): <input type="number" id="batch-ic-c-level" value="1.5" step="0.1" min="0" max="3"></label>
-                            <label>Conc. (kg/m³): <input type="number" id="batch-ic-c-conc" value="180" step="10" min="0" max="360"></label>
+                            <label>Level (m): <input type="number" id="batch-ic-c-level" value="1.5" step="0.1" min="0"
+                                    max="3"></label>
+                            <label>Conc. (kg/m³): <input type="number" id="batch-ic-c-conc" value="180" step="10"
+                                    min="0" max="360"></label>
                         </div>
                         <div class="tank-config">
                             <h4>Tank D</h4>
-                            <label>Level (m): <input type="number" id="batch-ic-d-level" value="1.5" step="0.1" min="0" max="3"></label>
-                            <label>Conc. (kg/m³): <input type="number" id="batch-ic-d-conc" value="180" step="10" min="0" max="360"></label>
+                            <label>Level (m): <input type="number" id="batch-ic-d-level" value="1.5" step="0.1" min="0"
+                                    max="3"></label>
+                            <label>Conc. (kg/m³): <input type="number" id="batch-ic-d-conc" value="180" step="10"
+                                    min="0" max="360"></label>
                         </div>
                         <div class="tank-config">
                             <h4>Tank E</h4>
-                            <label>Level (m): <input type="number" id="batch-ic-e-level" value="1.5" step="0.1" min="0" max="3"></label>
-                            <label>Conc. (kg/m³): <input type="number" id="batch-ic-e-conc" value="180" step="10" min="0" max="360"></label>
+                            <label>Level (m): <input type="number" id="batch-ic-e-level" value="1.5" step="0.1" min="0"
+                                    max="3"></label>
+                            <label>Conc. (kg/m³): <input type="number" id="batch-ic-e-conc" value="180" step="10"
+                                    min="0" max="360"></label>
                         </div>
                     </div>
 
@@ -91,17 +105,17 @@
                         <div id="step-inputs-container">
                             <p class="hint">Add step changes in setpoints</p>
                         </div>
-                        <button id="add-step-input" class="btn-secondary">➕ Add Step Input</button>
+                        <button id="add-step-input" class="btn-secondary">Add Step Input</button>
                     </div>
 
-                    <button id="run-batch-simulation" class="btn-primary">▶️ Run Simulation</button>
+                    <button id="run-batch-simulation" class="btn-primary">Run Simulation</button>
                     <div id="batch-status" class="status-message"></div>
                 </div>
 
                 <!-- Real-time Mode Controls -->
                 <div id="realtime-controls" class="mode-controls">
                     <h2>Real-time Mode</h2>
-                    
+
                     <div class="control-group">
                         <h3>Configuration</h3>
                         <label>
@@ -118,29 +132,37 @@
                         <h3>Equilibrium Point</h3>
                         <div class="tank-config">
                             <h4>Levels (m)</h4>
-                            <label>Tank A: <input type="number" id="rt-eq-a-level" value="1.5" step="0.1" min="0" max="3"></label>
-                            <label>Tank B: <input type="number" id="rt-eq-b-level" value="1.5" step="0.1" min="0" max="3"></label>
-                            <label>Tank C: <input type="number" id="rt-eq-c-level" value="1.5" step="0.1" min="0" max="3"></label>
-                            <label>Tank D: <input type="number" id="rt-eq-d-level" value="1.5" step="0.1" min="0" max="3"></label>
-                            <label>Tank E: <input type="number" id="rt-eq-e-level" value="1.5" step="0.1" min="0" max="3"></label>
+                            <label>Tank A: <input type="number" id="rt-eq-a-level" value="1.5" step="0.1" min="0"
+                                    max="3"></label>
+                            <label>Tank B: <input type="number" id="rt-eq-b-level" value="1.5" step="0.1" min="0"
+                                    max="3"></label>
+                            <label>Tank C: <input type="number" id="rt-eq-c-level" value="1.5" step="0.1" min="0"
+                                    max="3"></label>
+                            <label>Tank D: <input type="number" id="rt-eq-d-level" value="1.5" step="0.1" min="0"
+                                    max="3"></label>
+                            <label>Tank E: <input type="number" id="rt-eq-e-level" value="1.5" step="0.1" min="0"
+                                    max="3"></label>
                         </div>
                         <div class="tank-config">
                             <h4>Concentrations (kg/m³)</h4>
-                            <label>Tank C: <input type="number" id="rt-eq-c-conc" value="180" step="10" min="0" max="360"></label>
-                            <label>Tank D: <input type="number" id="rt-eq-d-conc" value="180" step="10" min="0" max="360"></label>
-                            <label>Tank E: <input type="number" id="rt-eq-e-conc" value="180" step="10" min="0" max="360"></label>
+                            <label>Tank C: <input type="number" id="rt-eq-c-conc" value="180" step="10" min="0"
+                                    max="360"></label>
+                            <label>Tank D: <input type="number" id="rt-eq-d-conc" value="180" step="10" min="0"
+                                    max="360"></label>
+                            <label>Tank E: <input type="number" id="rt-eq-e-conc" value="180" step="10" min="0"
+                                    max="360"></label>
                         </div>
                     </div>
 
-                    <button id="initialize-realtime" class="btn-primary">🚀 Initialize</button>
-                    <button id="connect-websocket" class="btn-primary" disabled>🔌 Connect</button>
-                    
+                    <button id="initialize-realtime" class="btn-primary">Initialize</button>
+                    <button id="connect-websocket" class="btn-primary" disabled>Connect</button>
+
                     <div class="control-group" id="rt-runtime-controls" style="display: none;">
                         <h3>Runtime Controls</h3>
-                        <button id="rt-pause" class="btn-secondary">⏸️ Pause</button>
-                        <button id="rt-resume" class="btn-secondary" disabled>▶️ Resume</button>
-                        <button id="rt-reset" class="btn-warning">🔄 Reset</button>
-                        <button id="rt-disconnect" class="btn-danger">⛔ Disconnect</button>
+                        <button id="rt-pause" class="btn-secondary">Pause</button>
+                        <button id="rt-resume" class="btn-secondary" disabled>Resume</button>
+                        <button id="rt-reset" class="btn-warning">Reset</button>
+                        <button id="rt-disconnect" class="btn-danger">Disconnect</button>
                     </div>
 
                     <div class="control-group" id="rt-setpoint-controls" style="display: none;">
@@ -164,7 +186,7 @@
                             New Value:
                             <input type="number" id="rt-sp-value" step="0.1">
                         </label>
-                        <button id="rt-send-setpoint" class="btn-secondary">🎯 Set Setpoint</button>
+                        <button id="rt-send-setpoint" class="btn-secondary">Set Setpoint</button>
                     </div>
 
                     <div id="realtime-status" class="status-message"></div>
@@ -173,9 +195,11 @@
         </main>
 
         <!-- Data Visualization Panel -->
+        <!-- This section must be invisible by default -->
         <section class="data-panel">
             <h2>Process Data</h2>
             <div id="data-display">
+                <h3 class="panel-subtitle">Process Outputs (y)</h3>
                 <div class="data-grid">
                     <div class="data-card" id="data-tank-c-level">
                         <h3>Tank C Level</h3>
@@ -208,16 +232,75 @@
                         <div class="unit">kg/m³</div>
                     </div>
                 </div>
+
+                <h3 class="panel-subtitle">Control Inputs (u)</h3>
+                <div class="data-grid control-grid">
+                    <div class="data-card control-card" id="data-tank-a-supply">
+                        <h3>Tank A Supply Valve</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-b-supply">
+                        <h3>Tank B Supply Valve</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-c-water">
+                        <h3>Tank C Water Pump</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-c-brine">
+                        <h3>Tank C Brine Pump</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-c-outlet">
+                        <h3>Tank C Outlet Valve</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-d-water">
+                        <h3>Tank D Water Pump</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-d-brine">
+                        <h3>Tank D Brine Pump</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-d-outlet">
+                        <h3>Tank D Outlet Valve</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-e-water">
+                        <h3>Tank E Water Pump</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-e-brine">
+                        <h3>Tank E Brine Pump</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                    <div class="data-card control-card" id="data-tank-e-outlet">
+                        <h3>Tank E Outlet Valve</h3>
+                        <div class="value">--</div>
+                        <div class="unit">%</div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
 
     <!-- JavaScript Modules -->
-    <script src="/static/js/svg-synoptic.js"></script>
-    <script src="/static/js/api.js"></script>
-    <script src="/static/js/websocket.js"></script>
-    <script src="/static/js/ui.js"></script>
-    <script src="/static/js/app.js"></script>
+    <script src="../static/js/svg-synoptic.js"></script>
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/websocket.js"></script>
+    <script src="../static/js/ui.js"></script>
+    <script src="../static/js/app.js"></script>
 </body>
 
 </html>

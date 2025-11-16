@@ -4,6 +4,7 @@
  */
 
 const UI = (() => {
+    const CONTROL_KEY_REGEX = /(supply_valve|water_pump|brine_pump|outlet_valve)$/;
     /**
      * Show status message
      * @param {string} elementId - Status message element ID
@@ -40,12 +41,14 @@ const UI = (() => {
         if (!card) return;
 
         const valueElement = card.querySelector('.value');
-        if (valueElement) {
-            if (typeof value === 'number') {
-                valueElement.textContent = value.toFixed(decimals);
-            } else {
-                valueElement.textContent = value;
-            }
+        if (!valueElement) return;
+
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            valueElement.textContent = value.toFixed(decimals);
+        } else if (value === null || value === undefined || Number.isNaN(value)) {
+            valueElement.textContent = '--';
+        } else {
+            valueElement.textContent = value;
         }
     }
 
@@ -53,29 +56,33 @@ const UI = (() => {
      * Update all data cards from state object
      * @param {object} variables - Object with variable values
      */
-    function updateAllDataCards(variables) {
-        if (variables.tank_c_level !== undefined) {
-            updateDataCard('data-tank-c-level', variables.tank_c_level);
+    function updateAllDataCards(variables = {}, controls = null) {
+        const { processVars, controlVars } = splitVariableMap(variables || {});
+        const controlData = controls || (Object.keys(controlVars).length ? controlVars : null);
+
+        if (processVars.tank_c_level !== undefined) {
+            updateDataCard('data-tank-c-level', processVars.tank_c_level);
         }
-        if (variables.tank_c_concentration !== undefined) {
-            updateDataCard('data-tank-c-conc', variables.tank_c_concentration, 1);
+        if (processVars.tank_c_concentration !== undefined) {
+            updateDataCard('data-tank-c-conc', processVars.tank_c_concentration, 1);
         }
-        if (variables.tank_d_level !== undefined) {
-            updateDataCard('data-tank-d-level', variables.tank_d_level);
+        if (processVars.tank_d_level !== undefined) {
+            updateDataCard('data-tank-d-level', processVars.tank_d_level);
         }
-        if (variables.tank_d_concentration !== undefined) {
-            updateDataCard('data-tank-d-conc', variables.tank_d_concentration, 1);
+        if (processVars.tank_d_concentration !== undefined) {
+            updateDataCard('data-tank-d-conc', processVars.tank_d_concentration, 1);
         }
-        if (variables.tank_e_level !== undefined) {
-            updateDataCard('data-tank-e-level', variables.tank_e_level);
+        if (processVars.tank_e_level !== undefined) {
+            updateDataCard('data-tank-e-level', processVars.tank_e_level);
         }
-        if (variables.tank_e_concentration !== undefined) {
-            updateDataCard('data-tank-e-conc', variables.tank_e_concentration, 1);
+        if (processVars.tank_e_concentration !== undefined) {
+            updateDataCard('data-tank-e-conc', processVars.tank_e_concentration, 1);
         }
 
-        // Update SVG overlays if available
+        updateControlCards(controlData || {});
+
         if (typeof SVGSynoptic !== 'undefined') {
-            SVGSynoptic.updateOverlays(variables);
+            SVGSynoptic.updateOverlays(processVars, controlData || {});
         }
     }
 
@@ -92,6 +99,43 @@ const UI = (() => {
         if (typeof SVGSynoptic !== 'undefined') {
             SVGSynoptic.resetOverlays();
         }
+    }
+
+    function updateControlCards(controlData = {}) {
+        updateControlCard('data-tank-a-supply', controlData.tank_a_supply_valve);
+        updateControlCard('data-tank-b-supply', controlData.tank_b_supply_valve);
+        updateControlCard('data-tank-c-water', controlData.tank_c_water_pump);
+        updateControlCard('data-tank-c-brine', controlData.tank_c_brine_pump);
+        updateControlCard('data-tank-c-outlet', controlData.tank_c_outlet_valve);
+        updateControlCard('data-tank-d-water', controlData.tank_d_water_pump);
+        updateControlCard('data-tank-d-brine', controlData.tank_d_brine_pump);
+        updateControlCard('data-tank-d-outlet', controlData.tank_d_outlet_valve);
+        updateControlCard('data-tank-e-water', controlData.tank_e_water_pump);
+        updateControlCard('data-tank-e-brine', controlData.tank_e_brine_pump);
+        updateControlCard('data-tank-e-outlet', controlData.tank_e_outlet_valve);
+    }
+
+    function updateControlCard(cardId, value) {
+        if (value === undefined || value === null) {
+            updateDataCard(cardId, null);
+            return;
+        }
+        updateDataCard(cardId, value * 100, 0);
+    }
+
+    function splitVariableMap(variables = {}) {
+        const processVars = {};
+        const controlVars = {};
+
+        Object.entries(variables).forEach(([key, value]) => {
+            if (CONTROL_KEY_REGEX.test(key)) {
+                controlVars[key] = value;
+            } else {
+                processVars[key] = value;
+            }
+        });
+
+        return { processVars, controlVars };
     }
 
     /**
@@ -150,7 +194,7 @@ const UI = (() => {
 
         const data = {};
         const inputs = form.querySelectorAll('input, select');
-        
+
         inputs.forEach(input => {
             if (input.type === 'checkbox') {
                 data[input.id] = input.checked;
@@ -233,7 +277,7 @@ const UI = (() => {
      */
     function displayBatchResults(response) {
         console.log('Batch simulation completed:', response);
-        
+
         // Get final values from time series
         const timeSeries = response.time_series;
         const finalValues = {};
@@ -250,7 +294,7 @@ const UI = (() => {
 
         // Show success message
         const statusMsg = `Simulation completed in ${response.metadata.execution_time.toFixed(2)}s. ` +
-                         `${response.metadata.num_steps} steps. Status: ${response.status}`;
+            `${response.metadata.num_steps} steps. Status: ${response.status}`;
         showStatus('batch-status', statusMsg, 'success');
     }
 
