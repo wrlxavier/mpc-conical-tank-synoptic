@@ -1,8 +1,5 @@
 """
-Service for real-time simulation mode with WebSocket support.
-
-This module implements the real-time operation mode where the system
-starts at equilibrium and responds to setpoint changes in real-time.
+Service for real-time simulation with actual tank physics and MPC control.
 """
 
 import asyncio
@@ -16,266 +13,348 @@ import uuid
 from app.src.models.simulation_models import (
     RealTimeConfig,
     SetpointCommand,
-    RealTimeState
+    RealTimeState,
 )
 from app.src.websocket.connection_manager import ConnectionManager
+
+# Importar núcleo de simulação
+from app.src.simulation import (
+    ModeloSistemaTanques,
+    SistemaControle,
+    PONTO_OPERACAO,
+    TS_CONTROLADOR,
+    DT_INTEGRACAO,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class RealTimeService:
     """
-    Service for managing real-time simulation with WebSocket communication.
-    
-    This service maintains the system state, integrates dynamics in real-time,
-    and broadcasts updates to connected clients via WebSocket.
+    Real-time simulation service with actual tank physics and MPC control.
+
+    Integrates:
+    - ModeloSistemaTanques: Non-linear tank physics
+    - SistemaControle: MPC controllers (C, D, E) + PID (A, B)
     """
-    
+
     def __init__(self, connection_manager: ConnectionManager):
-        """
-        Initialize real-time service.
-        
-        Args:
-            connection_manager: WebSocket connection manager instance.
-        """
+        """Initialize real-time service with simulation core."""
         self.connection_manager = connection_manager
         self.is_running = False
         self.is_paused = False
         self.session_id: Optional[str] = None
-        
-        # Configuration
+
+        # Configuração
         self.config: Optional[RealTimeConfig] = None
-        self.sampling_interval = 0.5  # seconds
-        
-        # State variables
+        self.sampling_interval = 0.5  # WebSocket update rate (seconds)
+        self.control_interval = TS_CONTROLADOR  # MPC execution rate (5s)
+        self.integration_step = DT_INTEGRACAO  # Physics integration step (0.5s)
+
+        # Núcleo de simulação
+        self.modelo: Optional[ModeloSistemaTanques] = None
+        self.controladores: Optional[SistemaControle] = None
+
+        # Estado do sistema
         self.current_state: Dict[str, float] = {}
         self.setpoints: Dict[str, float] = {}
-        self.controls: Dict[str, float] = {}
-        
-        # Physical constants
-        self.BRINE_CONCENTRATION = 360.0  # kg/m³
-        self.GRAVITY = 9.81  # m/s²
-        
-        # Integration
+        self.control_actions: Dict[str, float] = {}
+
+        # Temporização
         self.last_update_time = time.time()
-        
+        self.last_control_time = time.time()
+
     async def initialize(self, config: RealTimeConfig) -> str:
         """
-        Initialize real-time simulation at equilibrium.
-        
+        Initialize simulation at equilibrium point.
+
         Args:
-            config: Real-time configuration with equilibrium point.
-            
+            config: Real-time configuration.
+
         Returns:
-            Session ID for this simulation instance.
+            Session ID.
         """
         self.config = config
         self.session_id = str(uuid.uuid4())
         self.sampling_interval = config.sampling_interval
-        
-        # Initialize state at equilibrium
+
+        # Instanciar modelo físico
+        self.modelo = ModeloSistemaTanques()
+
+        # Condições iniciais no ponto de operação
+        estado_inicial = np.array(
+            [
+                PONTO_OPERACAO["hA_eq"],
+                PONTO_OPERACAO["hB_eq"],
+                PONTO_OPERACAO["h_eq"],  # hC
+                PONTO_OPERACAO["C_eq"],  # CC
+                PONTO_OPERACAO["h_eq"],  # hD
+                PONTO_OPERACAO["C_eq"],  # CD
+                PONTO_OPERACAO["h_eq"],  # hE
+                PONTO_OPERACAO["C_eq"],  # CE
+            ]
+        )
+
+        self.modelo.definir_estado(estado_inicial)
+
+        # Instanciar sistema de controle (MPC + PID)
+        self.controladores = SistemaControle(Ts=self.control_interval)
+
+        # Estado atual (para WebSocket)
         self.current_state = {
-            **{f"{k}_level": v for k, v in config.equilibrium_point.levels.items()},
-            **{f"{k}_concentration": v for k, v in config.equilibrium_point.concentrations.items()}
+            "tank_a_level": estado_inicial[0],
+            "tank_b_level": estado_inicial[1],
+            "tank_c_level": estado_inicial[2],
+            "tank_c_concentration": estado_inicial[3],
+            "tank_d_level": estado_inicial[4],
+            "tank_d_concentration": estado_inicial[5],
+            "tank_e_level": estado_inicial[6],
+            "tank_e_concentration": estado_inicial[7],
         }
-        
-        # Initialize setpoints (same as equilibrium initially)
+
+        # Setpoints iniciais (mesmos do equilíbrio)
         self.setpoints = self.current_state.copy()
-        
-        # Initialize controls at equilibrium
-        self.controls = config.equilibrium_point.controls.copy()
-        
+
+        # Controles iniciais
+        self.control_actions = {
+            "tank_a_supply_valve": PONTO_OPERACAO["uA_eq"],
+            "tank_b_supply_valve": PONTO_OPERACAO["uB_eq"],
+            "tank_c_water_pump": PONTO_OPERACAO["u1_eq"],
+            "tank_c_brine_pump": PONTO_OPERACAO["u2_eq"],
+            "tank_c_outlet_valve": PONTO_OPERACAO["u3_eq"],
+            "tank_d_water_pump": PONTO_OPERACAO["u1_eq"],
+            "tank_d_brine_pump": PONTO_OPERACAO["u2_eq"],
+            "tank_d_outlet_valve": PONTO_OPERACAO["u3_eq"],
+            "tank_e_water_pump": PONTO_OPERACAO["u1_eq"],
+            "tank_e_brine_pump": PONTO_OPERACAO["u2_eq"],
+            "tank_e_outlet_valve": PONTO_OPERACAO["u3_eq"],
+        }
+
         self.is_running = True
         self.is_paused = False
         self.last_update_time = time.time()
-        
-        logger.info(f"Real-time simulation initialized: {self.session_id}")
+        self.last_control_time = time.time()
+
+        logger.info(f"Real-time simulation initialized with MPC: {self.session_id}")
         return self.session_id
-    
+
     async def run_realtime_loop(self, websocket: WebSocket):
         """
-        Main real-time loop that integrates dynamics and sends updates.
-        
+        Main real-time loop: integrate physics + execute MPC.
+
         Args:
-            websocket: WebSocket connection for sending data.
+            websocket: WebSocket connection for streaming data.
         """
-        logger.info("Starting real-time loop")
-        
+        logger.info("Starting real-time loop with MPC control")
+
         while self.is_running:
             try:
                 if not self.is_paused:
-                    # Calculate time since last update
                     current_time = time.time()
+
+                    # 1. Executar MPC a cada control_interval (5s)
+                    if (current_time - self.last_control_time) >= self.control_interval:
+                        self._execute_mpc_step()
+                        self.last_control_time = current_time
+
+                    # 2. Integrar física a cada integration_step (0.5s)
                     dt = current_time - self.last_update_time
-                    
-                    # Integrate dynamics (TODO: replace with actual model)
-                    self._integrate_step(dt)
-                    
-                    # Update control signals (simple PI control for demo)
-                    self._update_controls()
-                    
-                    self.last_update_time = current_time
-                    
-                    # Prepare state message
+                    if dt >= self.integration_step:
+                        self._integrate_physics_step(dt)
+                        self.last_update_time = current_time
+
+                    # 3. Atualizar current_state a partir do modelo
+                    self._update_state_from_model()
+
+                    # 4. Enviar dados via WebSocket
                     state = RealTimeState(
                         timestamp=current_time,
                         variables=self.current_state,
                         setpoints=self.setpoints,
-                        controls=self.controls
+                        controls=self.control_actions,
                     )
-                    
-                    # Send to client
-                    await websocket.send_json({
-                        "type": "state_update",
-                        "data": state.dict()
-                    })
-                
-                # Wait for next sampling interval
+
+                    await websocket.send_json(
+                        {"type": "state_update", "data": state.dict()}
+                    )
+
+                # Aguardar próximo sampling_interval (0.5s)
                 await asyncio.sleep(self.sampling_interval)
-                
+
             except asyncio.CancelledError:
                 logger.info("Real-time loop cancelled")
                 break
             except Exception as e:
-                logger.error(f"Error in real-time loop: {str(e)}")
+                logger.error(f"Error in real-time loop: {str(e)}", exc_info=True)
                 break
-    
-    def _integrate_step(self, dt: float):
+
+    def _execute_mpc_step(self):
         """
-        Integrate system dynamics for one time step.
-        
+        Execute MPC optimization and update control actions.
+        """
+        if not self.modelo or not self.controladores:
+            logger.warning("MPC step skipped: simulation core not initialized")
+            return
+
+        # Obter estado atual do modelo
+        estado_atual = self.modelo.obter_estado()
+
+        # Montar dicionário de estados para controladores
+        estados = {
+            "hA": estado_atual[0],
+            "hB": estado_atual[1],
+            "hC": estado_atual[2],
+            "CC": estado_atual[3],
+            "hD": estado_atual[4],
+            "CD": estado_atual[5],
+            "hE": estado_atual[6],
+            "CE": estado_atual[7],
+        }
+
+        # Montar dicionário de referências (setpoints)
+        referencias = {
+            "hC_ref": self.setpoints["tank_c_level"],
+            "CC_ref": self.setpoints["tank_c_concentration"],
+            "hD_ref": self.setpoints["tank_d_level"],
+            "CD_ref": self.setpoints["tank_d_concentration"],
+            "hE_ref": self.setpoints["tank_e_level"],
+            "CE_ref": self.setpoints["tank_e_concentration"],
+        }
+
+        # Executar MPC (calcula ações ótimas)
+        acoes = self.controladores.calcular_acoes(estados, referencias)
+
+        # Atualizar control_actions
+        self.control_actions = {
+            "tank_a_supply_valve": acoes["uA"],
+            "tank_b_supply_valve": acoes["uB"],
+            "tank_c_water_pump": acoes["uC1"],
+            "tank_c_brine_pump": acoes["uC2"],
+            "tank_c_outlet_valve": acoes["uC3"],
+            "tank_d_water_pump": acoes["uD1"],
+            "tank_d_brine_pump": acoes["uD2"],
+            "tank_d_outlet_valve": acoes["uD3"],
+            "tank_e_water_pump": acoes["uE1"],
+            "tank_e_brine_pump": acoes["uE2"],
+            "tank_e_outlet_valve": acoes["uE3"],
+        }
+
+        logger.debug(f"MPC step executed: {acoes}")
+
+    def _integrate_physics_step(self, dt: float):
+        """
+        Integrate tank physics for one time step.
+
         Args:
-            dt: Time step in seconds.
+            dt: Time step (seconds).
         """
-        # TODO: Replace with actual tank dynamics
-        # For now, simple first-order response toward setpoint
-        
-        for key in self.current_state:
-            if key in self.setpoints:
-                setpoint = self.setpoints[key]
-                current = self.current_state[key]
-                
-                # First-order dynamics: dx/dt = (setpoint - current) / tau
-                tau = 300.0  # Time constant in seconds
-                derivative = (setpoint - current) / tau
-                
-                # Euler integration
-                self.current_state[key] += derivative * dt
-                
-                # Add noise if enabled
-                if self.config and self.config.enable_noise:
-                    noise = np.random.normal(0, self.config.noise_level * abs(current))
-                    self.current_state[key] += noise
-                
-                # Clamp to physical limits
-                if 'level' in key:
-                    self.current_state[key] = max(0.0, min(3.0, self.current_state[key]))
-                elif 'concentration' in key:
-                    self.current_state[key] = max(0.0, min(360.0, self.current_state[key]))
-    
-    def _update_controls(self):
-        """
-        Update control signals based on current errors (simple PI control).
-        
-        TODO: Replace with actual MPC or PID controller.
-        """
-        # Simple proportional control for demo
-        Kp = 0.1
-        
-        for key in self.setpoints:
-            if key in self.current_state:
-                error = self.setpoints[key] - self.current_state[key]
-                
-                # Determine which control to adjust
-                control_key = self._get_control_for_variable(key)
-                if control_key and control_key in self.controls:
-                    # Proportional action
-                    self.controls[control_key] += Kp * error
-                    
-                    # Clamp to [0, 1]
-                    self.controls[control_key] = max(0.0, min(1.0, self.controls[control_key]))
-    
-    def _get_control_for_variable(self, variable_key: str) -> Optional[str]:
-        """
-        Map variable to its primary control signal.
-        
-        Args:
-            variable_key: Variable identifier (e.g., 'tank_c_level').
-            
-        Returns:
-            Control signal key or None.
-        """
-        # Simplified mapping for demonstration
-        if 'tank_c_level' in variable_key:
-            return 'tank_c_water_pump'
-        elif 'tank_c_concentration' in variable_key:
-            return 'tank_c_brine_pump'
-        elif 'tank_d_level' in variable_key:
-            return 'tank_d_water_pump'
-        elif 'tank_d_concentration' in variable_key:
-            return 'tank_d_brine_pump'
-        elif 'tank_e_level' in variable_key:
-            return 'tank_e_water_pump'
-        elif 'tank_e_concentration' in variable_key:
-            return 'tank_e_brine_pump'
-        return None
-    
+        if not self.modelo:
+            logger.warning("Physics integration skipped: model not initialized")
+            return
+
+        # Montar vetor de controles
+        u = np.array(
+            [
+                self.control_actions["tank_a_supply_valve"],
+                self.control_actions["tank_b_supply_valve"],
+                self.control_actions["tank_c_water_pump"],
+                self.control_actions["tank_c_brine_pump"],
+                self.control_actions["tank_c_outlet_valve"],
+                self.control_actions["tank_d_water_pump"],
+                self.control_actions["tank_d_brine_pump"],
+                self.control_actions["tank_d_outlet_valve"],
+                self.control_actions["tank_e_water_pump"],
+                self.control_actions["tank_e_brine_pump"],
+                self.control_actions["tank_e_outlet_valve"],
+            ]
+        )
+
+        # Integrar modelo físico (RK4 ou Euler)
+        self.modelo.integrar_passo(u, dt, metodo="euler")
+
+    def _update_state_from_model(self):
+        """Update current_state dictionary from model state vector."""
+        if not self.modelo:
+            return
+
+        estado = self.modelo.obter_estado()
+
+        self.current_state = {
+            "tank_a_level": float(estado[0]),
+            "tank_b_level": float(estado[1]),
+            "tank_c_level": float(estado[2]),
+            "tank_c_concentration": float(estado[3]),
+            "tank_d_level": float(estado[4]),
+            "tank_d_concentration": float(estado[5]),
+            "tank_e_level": float(estado[6]),
+            "tank_e_concentration": float(estado[7]),
+        }
+
     async def update_setpoint(self, command: SetpointCommand):
         """
-        Update setpoint in response to user command.
-        
+        Update setpoint from user command.
+
         Args:
-            command: Setpoint change command from WebSocket.
+            command: Setpoint change command.
         """
         key = f"{command.tank_id}_{command.variable}"
-        
+
         if key in self.setpoints:
             old_value = self.setpoints[key]
             self.setpoints[key] = command.value
-            logger.info(f"Setpoint changed: {key} from {old_value:.2f} to {command.value:.2f}")
+            logger.info(
+                f"Setpoint changed: {key} from {old_value:.2f} to {command.value:.2f}"
+            )
         else:
             logger.warning(f"Unknown setpoint key: {key}")
-    
+
     def get_current_state(self) -> Dict[str, any]:
-        """
-        Get current simulation state.
-        
-        Returns:
-            Dictionary with current variables, setpoints, and controls.
-        """
+        """Get current simulation state."""
         return {
             "variables": self.current_state,
             "setpoints": self.setpoints,
-            "controls": self.controls,
+            "controls": self.control_actions,
             "is_running": self.is_running,
             "is_paused": self.is_paused,
-            "session_id": self.session_id
+            "session_id": self.session_id,
         }
-    
+
     async def pause(self):
-        """Pause real-time simulation."""
+        """Pause simulation."""
         self.is_paused = True
-        logger.info("Real-time simulation paused")
-    
+        logger.info("Simulation paused")
+
     async def resume(self):
-        """Resume real-time simulation."""
+        """Resume simulation."""
         self.is_paused = False
-        self.last_update_time = time.time()  # Reset time reference
-        logger.info("Real-time simulation resumed")
-    
+        self.last_update_time = time.time()
+        self.last_control_time = time.time()
+        logger.info("Simulation resumed")
+
     async def reset(self):
-        """Reset simulation to equilibrium point."""
-        if self.config:
-            self.current_state = {
-                **{f"{k}_level": v for k, v in self.config.equilibrium_point.levels.items()},
-                **{f"{k}_concentration": v for k, v in self.config.equilibrium_point.concentrations.items()}
-            }
+        """Reset to equilibrium point."""
+        if self.modelo and self.controladores:
+            # Reinicializar estado
+            estado_inicial = np.array(
+                [
+                    PONTO_OPERACAO["hA_eq"],
+                    PONTO_OPERACAO["hB_eq"],
+                    PONTO_OPERACAO["h_eq"],
+                    PONTO_OPERACAO["C_eq"],
+                    PONTO_OPERACAO["h_eq"],
+                    PONTO_OPERACAO["C_eq"],
+                    PONTO_OPERACAO["h_eq"],
+                    PONTO_OPERACAO["C_eq"],
+                ]
+            )
+
+            self.modelo.definir_estado(estado_inicial)
+            self._update_state_from_model()
             self.setpoints = self.current_state.copy()
-            self.controls = self.config.equilibrium_point.controls.copy()
-            self.last_update_time = time.time()
-            logger.info("Real-time simulation reset to equilibrium")
-    
+
+            logger.info("Simulation reset to equilibrium")
+
     async def shutdown(self):
-        """Shutdown real-time service."""
+        """Shutdown service."""
         self.is_running = False
         logger.info("Real-time service shutdown")

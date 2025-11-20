@@ -78,7 +78,7 @@ The integration is **fully automatic** - no manual intervention needed. When the
 2. SVG is fetched and displayed
 3. Overlay elements are created and positioned
 4. On successful load, `#synoptic-board` receives the `loaded` class (see `svg-synoptic.css` for placeholder hiding)
-5. Data updates from batch or real-time simulations automatically refresh both:
+5. Data updates from the real-time simulation automatically refresh both:
    - Data cards in the panel
    - SVG overlays on the diagram
 
@@ -192,7 +192,6 @@ Potential improvements:
 
 The SVG synoptic seamlessly integrates with:
 
-- **Batch Simulation Mode**: Updates with final simulation values
 - **Real-time Mode**: Updates continuously via WebSocket
 - **MPC Controller**: Future integration for displaying control actions
 

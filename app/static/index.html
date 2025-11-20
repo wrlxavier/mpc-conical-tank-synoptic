@@ -13,14 +13,7 @@
     <div class="container">
         <header class="header-page">
             <h1>Tank Process Simulation - Synoptic Interface</h1>
-            <!-- <div class="mode-selector">
-                <button id="mode-batch" class="mode-btn active" data-mode="batch">
-                    <span class="icon"></span> Batch Simulation
-                </button>
-                <button id="mode-realtime" class="mode-btn" data-mode="realtime">
-                    <span class="icon"></span> Real-time Mode
-                </button>
-            </div> -->
+            <p class="subtitle">Focused on real-time MPC control</p>
         </header>
 
         <main>
@@ -37,83 +30,9 @@
                 </div>
             </section>
 
-            <!-- Control Panels -->
+            <!-- Control Panel -->
             <aside class="control-panel">
-                <!-- Batch Mode Controls -->
-                <div class="mode-selector">
-                    <button id="mode-batch" class="mode-btn active" data-mode="batch">
-                        <span class="icon"></span> Batch Simulation
-                    </button>
-                    <button id="mode-realtime" class="mode-btn" data-mode="realtime">
-                        <span class="icon"></span> Real-time Mode
-                    </button>
-                </div>
-                <div id="batch-controls" class="mode-controls active">
-                    <h2>Batch Simulation</h2>
-
-                    <div class="control-group">
-                        <h3>Simulation Configuration</h3>
-                        <label>
-                            Duration (seconds):
-                            <input type="number" id="batch-duration" value="3600" min="0" step="100">
-                        </label>
-                        <label>
-                            Time Step (seconds):
-                            <input type="number" id="batch-timestep" value="0.1" min="0.01" max="10" step="0.01">
-                        </label>
-                        <label>
-                            Save Interval (seconds):
-                            <input type="number" id="batch-saveinterval" value="1.0" min="0.1" step="0.1">
-                        </label>
-                        <label>
-                            Solver:
-                            <select id="batch-solver">
-                                <option value="rk4">RK4 (Runge-Kutta 4)</option>
-                                <option value="euler">Euler</option>
-                                <option value="ode45">ODE45</option>
-                            </select>
-                        </label>
-                    </div>
-
-                    <div class="control-group">
-                        <h3>Initial Conditions</h3>
-                        <div class="tank-config">
-                            <h4>Tank C</h4>
-                            <label>Level (m): <input type="number" id="batch-ic-c-level" value="1.5" step="0.1" min="0"
-                                    max="3"></label>
-                            <label>Conc. (kg/m³): <input type="number" id="batch-ic-c-conc" value="180" step="10"
-                                    min="0" max="360"></label>
-                        </div>
-                        <div class="tank-config">
-                            <h4>Tank D</h4>
-                            <label>Level (m): <input type="number" id="batch-ic-d-level" value="1.5" step="0.1" min="0"
-                                    max="3"></label>
-                            <label>Conc. (kg/m³): <input type="number" id="batch-ic-d-conc" value="180" step="10"
-                                    min="0" max="360"></label>
-                        </div>
-                        <div class="tank-config">
-                            <h4>Tank E</h4>
-                            <label>Level (m): <input type="number" id="batch-ic-e-level" value="1.5" step="0.1" min="0"
-                                    max="3"></label>
-                            <label>Conc. (kg/m³): <input type="number" id="batch-ic-e-conc" value="180" step="10"
-                                    min="0" max="360"></label>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <h3>Step Inputs (Optional)</h3>
-                        <div id="step-inputs-container">
-                            <p class="hint">Add step changes in setpoints</p>
-                        </div>
-                        <button id="add-step-input" class="btn-secondary">Add Step Input</button>
-                    </div>
-
-                    <button id="run-batch-simulation" class="btn-primary">Run Simulation</button>
-                    <div id="batch-status" class="status-message"></div>
-                </div>
-
-                <!-- Real-time Mode Controls -->
-                <div id="realtime-controls" class="mode-controls">
+                <div id="realtime-controls">
                     <h2>Real-time Mode</h2>
 
                     <div class="control-group">
@@ -196,7 +115,7 @@
 
         <!-- Data Visualization Panel -->
         <!-- This section must be invisible by default -->
-        <section class="data-panel">
+        <section class="data-panel" style="display: none;">
             <h2>Process Data</h2>
             <div id="data-display">
                 <h3 class="panel-subtitle">Process Outputs (y)</h3>
@@ -293,9 +212,39 @@
                 </div>
             </div>
         </section>
+
+        <!-- Real-time Trend Charts -->
+        <section class="charts-section">
+            <h2>Real-time Trends</h2>
+
+            <div class="chart-row">
+                <h3>Tank Levels (A-E)</h3>
+                <div class="chart-wrapper">
+                    <canvas id="chart-levels"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-row">
+                <h3>Tank Concentrations (C, D, E)</h3>
+                <div class="chart-wrapper">
+                    <canvas id="chart-concentrations"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-row">
+                <h3>Control Actions</h3>
+                <div class="chart-wrapper">
+                    <canvas id="chart-controls"></canvas>
+                </div>
+            </div>
+        </section>
     </div>
 
     <!-- JavaScript Modules -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"
+        integrity="sha384-Sse/HDqcypGpyTDpvZOJNnG0TT3feGQUkF9H+mnRvic+LjR+K1NhTt8f51KIQ3v3"
+        crossorigin="anonymous"></script>
+    <script src="../static/js/charts.js"></script>
     <script src="../static/js/svg-synoptic.js"></script>
     <script src="../static/js/api.js"></script>
     <script src="../static/js/websocket.js"></script>

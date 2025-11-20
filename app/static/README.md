@@ -1,6 +1,6 @@
 # Frontend Documentation - Tank Simulation Synoptic
 
-Complete documentation for the dual-mode tank simulation frontend interface.
+Complete documentation for the real-time tank simulation frontend interface.
 
 ## 🏛️ Architecture
 
@@ -27,24 +27,9 @@ app/static/
 Handles all HTTP requests to the FastAPI backend.
 
 **Key Functions:**
-- `runBatchSimulation(params)` - POST to `/simulation/batch`
 - `initializeRealTime(config)` - POST to `/simulation/initialize`
 - `getSimulationStatus()` - GET current status
 - `healthCheck()` - Check backend health
-
-**Example Usage:**
-```javascript
-// Run batch simulation
-const params = {
-    initial_conditions: { /* ... */ },
-    control_inputs: { /* ... */ },
-    simulation_config: { /* ... */ },
-    step_inputs: [ /* ... */ ]
-};
-
-const response = await API.runBatchSimulation(params);
-console.log(response.time_series);
-```
 
 ### 2. WebSocket Module (`websocket.js`)
 
@@ -83,9 +68,6 @@ Handles all DOM manipulation and data visualization.
 - `showStatus(elementId, message, type)` - Display status messages
 - `updateDataCard(cardId, value, decimals)` - Update single data card
 - `updateAllDataCards(variables)` - Update all cards from state object
-- `switchMode(mode)` - Switch between batch/real-time modes
-- `addStepInputRow(containerId)` - Add step input form dynamically
-- `getStepInputs(containerId)` - Extract step inputs from form
 
 **Example Usage:**
 ```javascript
@@ -98,7 +80,7 @@ UI.updateAllDataCards({
 });
 
 // Show success message
-UI.showStatus('batch-status', 'Simulation completed!', 'success');
+UI.showStatus('realtime-status', 'Receiving live data...', 'success');
 ```
 
 ### 4. SVG Synoptic Module (`svg-synoptic.js`)
@@ -123,26 +105,7 @@ Actuator controls are displayed as percentages:
 $u_{\%} = 100 \times u$  
 Scaling is performed in `updateControlOverlay`.
 
-## 📊 Operation Modes
-
-### Batch Simulation Mode
-
-**Workflow:**
-1. User configures simulation parameters (duration, time step, initial conditions)
-2. Optionally adds step inputs (setpoint changes at specific times)
-3. Clicks "Run Simulation"
-4. Frontend sends POST to `/simulation/batch`
-5. Backend processes simulation and returns complete time-series
-6. Frontend displays final values in data cards
-
-**Data Flow:**
-```
-User Input → buildBatchSimulationParams() → API.runBatchSimulation() → Backend
-                                                                    ↓
-Data Cards ← UI.displayBatchResults() ←───────────────── Response
-```
-
-### Real-time Mode
+## 📊 Real-time Operation
 
 **Workflow:**
 1. `initializeRealTime()` (HTTP) sends payload built by `buildRealTimeConfig`.
@@ -207,8 +170,7 @@ updateControlOverlay('overlay-tank-c-water-pump', controls.tank_c_water_pump);
 
 All styles are in `css/styles.css`. Key classes:
 
-- `.mode-btn` - Mode selector buttons
-- `.control-group` - Form sections
+- `.control-panel` / `.control-group` - Form layout
 - `.data-card` - Real-time data display cards
 - `.status-message` - Status/error messages
 - `.btn-primary`, `.btn-secondary`, etc. - Action buttons
@@ -277,13 +239,6 @@ The frontend implements comprehensive error handling:
 
 ### Manual Testing Checklist
 
-**Batch Mode:**
-- [ ] Configure simulation parameters
-- [ ] Add step inputs
-- [ ] Run simulation successfully
-- [ ] Verify data cards update with final values
-- [ ] Check status message displays correctly
-
 **Real-time Mode:**
 - [ ] Initialize with equilibrium point
 - [ ] Connect WebSocket successfully
@@ -311,8 +266,8 @@ const WS_DEBUG = true;
 1. **SVG Integration**: Load actual plant diagram into `#synoptic-board`
 2. **Data Overlays**: Create positioned divs in `#data-overlays` to display values on SVG
 3. **Charting**: Add time-series charts using Chart.js or similar library
-4. **Historical Data**: Implement local storage for batch simulation results
-5. **Export Function**: Add CSV/JSON export for simulation data
+4. **Historical Streaming Data**: Persist key metrics from the real-time feed
+5. **Export Function**: Add CSV/JSON export for sampled real-time data
 
 ## 📚 Resources
 

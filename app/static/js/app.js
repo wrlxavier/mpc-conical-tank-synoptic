@@ -7,7 +7,6 @@
     'use strict';
 
     // Application state
-    let currentMode = 'batch';
     let realtimeSessionId = null;
     let isPaused = false;
 
@@ -27,128 +26,15 @@
             console.warn('SVG Synoptic initialization failed');
         }
 
-        // Set up mode switching
-        setupModeSwitch();
-
-        // Set up batch simulation
-        setupBatchSimulation();
-
         // Set up real-time simulation
         setupRealTimeSimulation();
+        // Initialize trend charts
+        if (typeof ChartsManager !== 'undefined') {
+            ChartsManager.initialize();
+        }
 
         // Perform health check
         performHealthCheck();
-    }
-
-    /**
-     * Set up mode switching functionality
-     */
-    function setupModeSwitch() {
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const mode = btn.getAttribute('data-mode');
-                switchToMode(mode);
-            });
-        });
-    }
-
-    /**
-     * Switch to specified mode
-     * @param {string} mode - 'batch' or 'realtime'
-     */
-    function switchToMode(mode) {
-        if (currentMode === mode) return;
-
-        // Disconnect WebSocket if switching from real-time
-        if (currentMode === 'realtime' && WebSocketManager.getConnectionStatus()) {
-            WebSocketManager.disconnect();
-        }
-
-        currentMode = mode;
-        UI.switchMode(mode);
-        console.log(`Switched to ${mode} mode`);
-    }
-
-    /**
-     * Set up batch simulation controls
-     */
-    function setupBatchSimulation() {
-        // Add step input button
-        document.getElementById('add-step-input')?.addEventListener('click', () => {
-            UI.addStepInputRow('step-inputs-container');
-        });
-
-        // Run simulation button
-        document.getElementById('run-batch-simulation')?.addEventListener('click', async () => {
-            await runBatchSimulation();
-        });
-    }
-
-    /**
-     * Run batch simulation
-     */
-    async function runBatchSimulation() {
-        try {
-            UI.showStatus('batch-status', 'Preparing simulation...', 'info');
-            UI.toggleButton('run-batch-simulation', false);
-
-            // Collect simulation parameters
-            const params = buildBatchSimulationParams();
-            console.log('Batch simulation parameters:', params);
-
-            // Run simulation
-            UI.showStatus('batch-status', 'Running simulation...', 'info');
-            const response = await API.runBatchSimulation(params);
-
-            // Display results
-            UI.displayBatchResults(response);
-
-        } catch (error) {
-            console.error('Batch simulation error:', error);
-            UI.showStatus('batch-status', `Error: ${error.message}`, 'error');
-        } finally {
-            UI.toggleButton('run-batch-simulation', true);
-        }
-    }
-
-    /**
-     * Build batch simulation parameters from form inputs
-     * @returns {object} Simulation parameters
-     */
-    function buildBatchSimulationParams() {
-        return {
-            initial_conditions: {
-                tank_a: { level: 1.5, concentration: null },
-                tank_b: { level: 1.5, concentration: null },
-                tank_c: {
-                    level: parseFloat(document.getElementById('batch-ic-c-level').value),
-                    concentration: parseFloat(document.getElementById('batch-ic-c-conc').value)
-                },
-                tank_d: {
-                    level: parseFloat(document.getElementById('batch-ic-d-level').value),
-                    concentration: parseFloat(document.getElementById('batch-ic-d-conc').value)
-                },
-                tank_e: {
-                    level: parseFloat(document.getElementById('batch-ic-e-level').value),
-                    concentration: parseFloat(document.getElementById('batch-ic-e-conc').value)
-                }
-            },
-            control_inputs: {
-                tank_a_control: { supply_valve: 0.5 },
-                tank_b_control: { supply_valve: 0.5 },
-                tank_c_control: { water_pump: 0.6, brine_pump: 0.6, outlet_valve: 0.5 },
-                tank_d_control: { water_pump: 0.6, brine_pump: 0.6, outlet_valve: 0.5 },
-                tank_e_control: { water_pump: 0.6, brine_pump: 0.6, outlet_valve: 0.5 }
-            },
-            simulation_config: {
-                simulation_id: `batch_${Date.now()}`,
-                time_step: parseFloat(document.getElementById('batch-timestep').value),
-                duration: parseFloat(document.getElementById('batch-duration').value),
-                solver: document.getElementById('batch-solver').value,
-                save_interval: parseFloat(document.getElementById('batch-saveinterval').value)
-            },
-            step_inputs: UI.getStepInputs('step-inputs-container')
-        };
     }
 
     /**
@@ -301,15 +187,18 @@
      * @param {object} data - Message data
      */
     function handleWebSocketMessage(data) {
-        if (data.type === 'initial_state') {
-            console.log('Received initial state:', data.data);
-            const { variables = {}, controls = {} } = data.data || {};
-            UI.updateAllDataCards(variables, controls);
-        } else if (data.type === 'state_update') {
-            // Update data display in real-time
-            const { variables = {}, controls = {} } = data.data || {};
-            UI.updateAllDataCards(variables, controls);
+        if (data.type !== 'initial_state' && data.type !== 'state_update') {
+            return;
         }
+
+        const payload = data.data || {};
+        const { variables = {}, controls = {}, timestamp } = payload;
+
+        if (typeof ChartsManager !== 'undefined') {
+            ChartsManager.ingestRealtimeSample(timestamp, variables, controls);
+        }
+
+        UI.updateAllDataCards(variables, controls);
     }
 
     /**
@@ -321,6 +210,9 @@
         UI.toggleElement('rt-runtime-controls', false);
         UI.toggleElement('rt-setpoint-controls', false);
         UI.toggleButton('connect-websocket', true);
+        if (typeof ChartsManager !== 'undefined') {
+            ChartsManager.reset();
+        }
     }
 
     /**
