@@ -14,14 +14,11 @@ The SVG synoptic module enables dynamic visualization of the tank process by loa
 - Graceful fallback with placeholder if SVG fails to load
 
 ### 2. **Real-time Data Overlays**
-- 8 overlay elements displaying:
-  - Tank A Level
-  - Tank B Level
-  - Tank C Level & Concentration
-  - Tank D Level & Concentration
-  - Tank E Level & Concentration
-- Additional overlays visualize the normalized control inputs (u) for each tank (supply valves, pumps, outlet valves) so that actuator demands are visible alongside process variables
-- Overlays update automatically with process data
+- 18 overlay elements displaying:
+  - 8 process variables (levels and concentrations)
+  - 10 actuator controls (supply valves, pumps, outlet valves for each tank)
+- Overlay configuration is defined in `overlayConfig`
+- Overlays update automatically with process and control data
 - Visual feedback with color changes when data is active
 
 ### 3. **Interactive Features**
@@ -77,9 +74,11 @@ Styles for:
 
 The integration is **fully automatic** - no manual intervention needed. When the page loads:
 
-1. SVG is fetched and displayed
-2. Overlay elements are created and positioned
-3. Data updates from batch or real-time simulations automatically refresh both:
+1. `SVGSynoptic.initialize` is called inside `app.js` during `init()`
+2. SVG is fetched and displayed
+3. Overlay elements are created and positioned
+4. On successful load, `#synoptic-board` receives the `loaded` class (see `svg-synoptic.css` for placeholder hiding)
+5. Data updates from the real-time simulation automatically refresh both:
    - Data cards in the panel
    - SVG overlays on the diagram
 
@@ -145,6 +144,16 @@ Backend Data → API/WebSocket → UI.updateAllDataCards() → SVGSynoptic.updat
                                   SVG Overlays Updated
 ```
 
+### Overlay Lifecycle
+- Overlays are created on SVG load
+- Updated via `updateOverlay` and `updateControlOverlay` functions
+- Reset to default state via `resetOverlays` (called by `UI.resetDataCards()`)
+
+### Control Scaling
+- Actuator control values are displayed as percentages:
+  $u_{\%} = 100 \times u$
+- Scaling is performed in `updateControlOverlay` before rendering
+
 ### Browser Compatibility
 
 - Modern browsers (Chrome, Firefox, Safari, Edge)
@@ -161,9 +170,8 @@ Backend Data → API/WebSocket → UI.updateAllDataCards() → SVGSynoptic.updat
 - Check network tab for 404 errors
 
 ### Overlays Not Updating
-- Verify data structure matches expected format
-- Check console for JavaScript errors
-- Ensure `SVGSynoptic` is loaded before `app.js`
+- If control overlays show `--`, check if `UI.updateAllDataCards()` is forwarding the `controls` object (see `splitVariableMap` in `app/static/js/ui.js`)
+- If SVG does not appear, confirm `tank_process.svg` exists and has read permissions
 
 ### Positioning Issues
 - Adjust CSS values in `svg-synoptic.css`
@@ -184,7 +192,6 @@ Potential improvements:
 
 The SVG synoptic seamlessly integrates with:
 
-- **Batch Simulation Mode**: Updates with final simulation values
 - **Real-time Mode**: Updates continuously via WebSocket
 - **MPC Controller**: Future integration for displaying control actions
 

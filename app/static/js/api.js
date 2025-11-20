@@ -35,19 +35,6 @@ const API = (() => {
     }
 
     /**
-     * Run batch simulation
-     * @param {object} simulationParams - Simulation parameters
-     * @returns {Promise<object>} Simulation results
-     */
-    async function runBatchSimulation(simulationParams) {
-        console.log('Starting batch simulation:', simulationParams);
-        return await request('/simulation/batch', {
-            method: 'POST',
-            body: JSON.stringify(simulationParams)
-        });
-    }
-
-    /**
      * Initialize real-time simulation
      * @param {object} config - Real-time configuration
      * @returns {Promise<object>} Initialization response with session ID
@@ -78,7 +65,6 @@ const API = (() => {
 
     // Public API
     return {
-        runBatchSimulation,
         initializeRealTime,
         getSimulationStatus,
         healthCheck

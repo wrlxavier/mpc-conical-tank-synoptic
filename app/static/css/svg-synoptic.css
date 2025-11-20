@@ -35,6 +35,7 @@
     border-radius: 6px;
     padding: 8px 12px;
     min-width: 120px;
+    max-width: 160px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
     /* Quero todo os tipo de efeitos de vidro fosco */
@@ -104,120 +105,140 @@
 .svg-overlay-tank-a {
     top: 19%;
     left: 34%;
+    border: solid #2563eb;
 }
 
 .svg-overlay-tank-b {
     top: 19%;
     right: 32%;
+    border: solid #7c3aed;
 }
 
 .svg-overlay-tank-c {
     /* Use apenas estilos comuns, como cor de fundo, borda, etc. */
     /* Evite definir top/left aqui se os IDs já fazem isso */
+    border: solid #16a34a;
 }
 
 .svg-overlay-tank-d {
     /* top: 40%;
     left: 50%;
     transform: translateX(-50%); */
+    border: solid #dc2626;
 }
 
 .svg-overlay-tank-e {
     /* top: 40%;
     right: 10%; */
+    border: solid #f97316;
 }
 
 /* Specific overlay positioning */
 #overlay-tank-c-level {
     top: 74%;
     left: 1%;
-    /* Estilos específicos para o nível */
+    border: solid #16a34a;
 }
 
 #overlay-tank-c-conc {
     top: 70%;
     left: 19%;
-    /* Estilos específicos para a concentração */
+    border: solid #16a34a;
 }
 
 #overlay-tank-d-level {
     top: 74%;
     left: 40%;
     transform: translateX(-50%);
+    border: solid #dc2626;
 }
 
 #overlay-tank-d-conc {
     top: 70%;
-    left: 58%;
+    left: 60%;
     transform: translateX(-50%);
+    border: solid #dc2626;
 }
 
 #overlay-tank-e-level {
     top: 74%;
-    right: 21%;
+    right: 20%;
+    border: solid #f97316;
 }
 
 #overlay-tank-e-conc {
     top: 70%;
-    right: 3%;
+    right: 1%;
+    border: solid #f97316;
 }
 
 #overlay-tank-a-supply {
     top: 15%;
-    left: 3%;
+    left: 1%;
+    border: solid #2563eb;
 }
 
 #overlay-tank-b-supply {
     top: 15%;
-    right: 1%;
+    right: 0%;
+    border: solid #7c3aed;
 }
 
 #overlay-tank-c-water-pump {
     top: 45%;
-    left: 5%;
+    left: 2%;
+    border: solid #16a34a;
 }
 
 #overlay-tank-c-brine-pump {
-    top: 45%;
+    top: 43%;
     left: 18%;
+    border: solid #16a34a;
 }
 
 #overlay-tank-c-outlet-valve {
-    top: 87%;
-    left: 3%;
+    top: 86%;
+    left: 2%;
+    border: solid #16a34a;
 }
 
 #overlay-tank-d-water-pump {
     top: 45%;
-    left: 44%;
+    left: 42%;
     transform: translateX(-50%);
+    border: solid #dc2626;
 }
 
 #overlay-tank-d-brine-pump {
-    top: 45%;
-    left: 57%;
+    top: 43%;
+    left: 58%;
     transform: translateX(-50%);
+    border: solid #dc2626;
 }
 
 #overlay-tank-d-outlet-valve {
-    top: 87%;
+    top: 86%;
     left: 42%;
     transform: translateX(-50%);
+    border: solid #dc2626;
 }
 
 #overlay-tank-e-water-pump {
     top: 45%;
     right: 17%;
+    border: solid #f97316;
 }
 
 #overlay-tank-e-brine-pump {
-    top: 45%;
-    right: 4%;
+    top: 43%;
+    right: 1%;
+    border: solid #f97316;
 }
 
 #overlay-tank-e-outlet-valve {
-    top: 87%;
+    top: 86%;
     right: 18%;
+    border: solid #f97316;
 }
 
 /* Placeholder styles */
