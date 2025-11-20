@@ -67,25 +67,25 @@ const SVGSynoptic = (() => {
         if (!overlayContainer) return;
 
         const overlayConfig = [
-            { id: 'overlay-tank-a-level', label: 'Tank A Level', unit: 'm', tank: 'A' },
-            { id: 'overlay-tank-b-level', label: 'Tank B Level', unit: 'm', tank: 'B' },
-            { id: 'overlay-tank-c-level', label: 'Tank C Level', unit: 'm', tank: 'C' },
-            { id: 'overlay-tank-c-conc', label: 'Tank C Conc.', unit: 'kg/m³', tank: 'C' },
-            { id: 'overlay-tank-d-level', label: 'Tank D Level', unit: 'm', tank: 'D' },
-            { id: 'overlay-tank-d-conc', label: 'Tank D Conc.', unit: 'kg/m³', tank: 'D' },
-            { id: 'overlay-tank-e-level', label: 'Tank E Level', unit: 'm', tank: 'E' },
-            { id: 'overlay-tank-e-conc', label: 'Tank E Conc.', unit: 'kg/m³', tank: 'E' },
-            { id: 'overlay-tank-a-supply', label: 'Tank A Supply', unit: '%', tank: 'A' },
-            { id: 'overlay-tank-b-supply', label: 'Tank B Supply', unit: '%', tank: 'B' },
-            { id: 'overlay-tank-c-water-pump', label: 'C Water Pump', unit: '%', tank: 'C' },
-            { id: 'overlay-tank-c-brine-pump', label: 'C Brine Pump', unit: '%', tank: 'C' },
-            { id: 'overlay-tank-c-outlet-valve', label: 'C Outlet Valve', unit: '%', tank: 'C' },
-            { id: 'overlay-tank-d-water-pump', label: 'D Water Pump', unit: '%', tank: 'D' },
-            { id: 'overlay-tank-d-brine-pump', label: 'D Brine Pump', unit: '%', tank: 'D' },
-            { id: 'overlay-tank-d-outlet-valve', label: 'D Outlet Valve', unit: '%', tank: 'D' },
-            { id: 'overlay-tank-e-water-pump', label: 'E Water Pump', unit: '%', tank: 'E' },
-            { id: 'overlay-tank-e-brine-pump', label: 'E Brine Pump', unit: '%', tank: 'E' },
-            { id: 'overlay-tank-e-outlet-valve', label: 'E Outlet Valve', unit: '%', tank: 'E' }
+            { id: 'overlay-tank-a-level', label: 'Nível Tanque A', unit: 'm', tank: 'A' },
+            { id: 'overlay-tank-b-level', label: 'Nível Tanque B', unit: 'm', tank: 'B' },
+            { id: 'overlay-tank-c-level', label: 'Nível Tanque C', unit: 'm', tank: 'C' },
+            { id: 'overlay-tank-c-conc', label: 'Concentração Tanque C', unit: 'kg/m³', tank: 'C' },
+            { id: 'overlay-tank-d-level', label: 'Nível Tanque D', unit: 'm', tank: 'D' },
+            { id: 'overlay-tank-d-conc', label: 'Concentração Tanque D', unit: 'kg/m³', tank: 'D' },
+            { id: 'overlay-tank-e-level', label: 'Nível Tanque E', unit: 'm', tank: 'E' },
+            { id: 'overlay-tank-e-conc', label: 'Concentração Tanque E', unit: 'kg/m³', tank: 'E' },
+            { id: 'overlay-tank-a-supply', label: 'Suprimento Tanque A', unit: '%', tank: 'A' },
+            { id: 'overlay-tank-b-supply', label: 'Suprimento Tanque B', unit: '%', tank: 'B' },
+            { id: 'overlay-tank-c-water-pump', label: 'Bomba de Água C', unit: '%', tank: 'C' },
+            { id: 'overlay-tank-c-brine-pump', label: 'Bomba de Salmoura C', unit: '%', tank: 'C' },
+            { id: 'overlay-tank-c-outlet-valve', label: 'Válvula de Saída C', unit: '%', tank: 'C' },
+            { id: 'overlay-tank-d-water-pump', label: 'Bomba de Água D', unit: '%', tank: 'D' },
+            { id: 'overlay-tank-d-brine-pump', label: 'Bomba de Salmoura D', unit: '%', tank: 'D' },
+            { id: 'overlay-tank-d-outlet-valve', label: 'Válvula de Saída D', unit: '%', tank: 'D' },
+            { id: 'overlay-tank-e-water-pump', label: 'Bomba de Água E', unit: '%', tank: 'E' },
+            { id: 'overlay-tank-e-brine-pump', label: 'Bomba de Salmoura E', unit: '%', tank: 'E' },
+            { id: 'overlay-tank-e-outlet-valve', label: 'Válvula de Saída E', unit: '%', tank: 'E' }
         ];
 
         overlayContainer.innerHTML = '';

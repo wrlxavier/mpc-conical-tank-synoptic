@@ -14,16 +14,16 @@
      * Initialize application
      */
     async function init() {
-        console.log('Initializing Tank Simulation Application');
+        console.log('Inicializando Aplicação de Simulação de Tanques');
 
         // Initialize SVG Synoptic
         const svgInitialized = await SVGSynoptic.initialize('synoptic-board', 'data-overlays');
 
         if (svgInitialized) {
             document.getElementById('synoptic-board').classList.add('loaded');
-            console.log('SVG Synoptic initialized successfully');
+            console.log('Sinóptico SVG inicializado com sucesso');
         } else {
-            console.warn('SVG Synoptic initialization failed');
+            console.warn('Falha ao inicializar o sinóptico SVG');
         }
 
         // Set up real-time simulation
@@ -33,7 +33,7 @@
             ChartsManager.initialize();
         }
 
-        // Perform health check
+        // Verificação de integridade
         performHealthCheck();
     }
 
@@ -68,7 +68,7 @@
 
         document.getElementById('rt-reset')?.addEventListener('click', () => {
             WebSocketManager.reset();
-            UI.showStatus('realtime-status', 'System reset to equilibrium', 'info');
+            UI.showStatus('realtime-status', 'Sistema resetado para o ponto de equilíbrio', 'info');
         });
 
         document.getElementById('rt-disconnect')?.addEventListener('click', () => {

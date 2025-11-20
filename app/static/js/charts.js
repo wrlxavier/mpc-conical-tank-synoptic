@@ -4,7 +4,7 @@
  */
 
 const ChartsManager = (() => {
-    const WINDOW_SECONDS = 3000;
+    const WINDOW_SECONDS = 600;
     let startTimestamp = null;
     const charts = {
         levels: null,
@@ -13,31 +13,31 @@ const ChartsManager = (() => {
     };
 
     const LEVEL_SERIES = [
-        { key: 'tank_a_level', label: 'Tank A', color: '#2563eb' },
-        { key: 'tank_b_level', label: 'Tank B', color: '#7c3aed' },
-        { key: 'tank_c_level', label: 'Tank C', color: '#16a34a' },
-        { key: 'tank_d_level', label: 'Tank D', color: '#dc2626' },
-        { key: 'tank_e_level', label: 'Tank E', color: '#f97316' }
+        { key: 'tank_a_level', label: 'Tanque A', color: '#2563eb' },
+        { key: 'tank_b_level', label: 'Tanque B', color: '#7c3aed' },
+        { key: 'tank_c_level', label: 'Tanque C', color: '#16a34a' },
+        { key: 'tank_d_level', label: 'Tanque D', color: '#dc2626' },
+        { key: 'tank_e_level', label: 'Tanque E', color: '#f97316' }
     ];
 
     const CONCENTRATION_SERIES = [
-        { key: 'tank_c_concentration', label: 'Tank C', color: '#0ea5e9' },
-        { key: 'tank_d_concentration', label: 'Tank D', color: '#a855f7' },
-        { key: 'tank_e_concentration', label: 'Tank E', color: '#f43f5e' }
+        { key: 'tank_c_concentration', label: 'Tanque C', color: '#0ea5e9' },
+        { key: 'tank_d_concentration', label: 'Tanque D', color: '#a855f7' },
+        { key: 'tank_e_concentration', label: 'Tanque E', color: '#f43f5e' }
     ];
 
     const CONTROL_SERIES = [
-        { key: 'tank_a_supply_valve', label: 'A Supply Valve', color: '#1d4ed8' },
-        { key: 'tank_b_supply_valve', label: 'B Supply Valve', color: '#7e22ce' },
-        { key: 'tank_c_water_pump', label: 'C Water Pump', color: '#10b981' },
-        { key: 'tank_c_brine_pump', label: 'C Brine Pump', color: '#0d9488' },
-        { key: 'tank_c_outlet_valve', label: 'C Outlet Valve', color: '#b45309' },
-        { key: 'tank_d_water_pump', label: 'D Water Pump', color: '#059669' },
-        { key: 'tank_d_brine_pump', label: 'D Brine Pump', color: '#047857' },
-        { key: 'tank_d_outlet_valve', label: 'D Outlet Valve', color: '#b91c1c' },
-        { key: 'tank_e_water_pump', label: 'E Water Pump', color: '#14b8a6' },
-        { key: 'tank_e_brine_pump', label: 'E Brine Pump', color: '#0f766e' },
-        { key: 'tank_e_outlet_valve', label: 'E Outlet Valve', color: '#e11d48' }
+        { key: 'tank_a_supply_valve', label: 'Válvula de Suprimento A', color: '#1d4ed8' },
+        { key: 'tank_b_supply_valve', label: 'Válvula de Suprimento B', color: '#7e22ce' },
+        { key: 'tank_c_water_pump', label: 'Bomba de Água C', color: '#10b981' },
+        { key: 'tank_c_brine_pump', label: 'Bomba de Salmoura C', color: '#0d9488' },
+        { key: 'tank_c_outlet_valve', label: 'Válvula de Saída C', color: '#b45309' },
+        { key: 'tank_d_water_pump', label: 'Bomba de Água D', color: '#059669' },
+        { key: 'tank_d_brine_pump', label: 'Bomba de Salmoura D', color: '#047857' },
+        { key: 'tank_d_outlet_valve', label: 'Válvula de Saída D', color: '#b91c1c' },
+        { key: 'tank_e_water_pump', label: 'Bomba de Água E', color: '#14b8a6' },
+        { key: 'tank_e_brine_pump', label: 'Bomba de Salmoura E', color: '#0f766e' },
+        { key: 'tank_e_outlet_valve', label: 'Válvula de Saída E', color: '#e11d48' }
     ];
 
     function initialize() {
@@ -49,19 +49,19 @@ const ChartsManager = (() => {
         charts.levels = createChart('chart-levels', LEVEL_SERIES, {
             yMin: 0,
             yMax: 3.5,
-            yTitle: 'Level (m)'
+            yTitle: 'Nível (m)'
         });
 
         charts.concentrations = createChart('chart-concentrations', CONCENTRATION_SERIES, {
             yMin: 0,
             yMax: 360,
-            yTitle: 'Concentration (kg/m³)'
+            yTitle: 'Concentração (kg/m³)'
         });
 
         charts.controls = createChart('chart-controls', CONTROL_SERIES, {
             yMin: 0,
             yMax: 100,
-            yTitle: 'Control (%)'
+            yTitle: 'Controle (%)'
         });
 
         reset();
