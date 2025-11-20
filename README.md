@@ -8,6 +8,9 @@ This API simulates a tank mixing process with:
 - 2 cylindrical utility tanks (A: water, B: brine)
 - 3 truncated-cone process tanks (C, D, E) with level and concentration control
 
+**Real-time focus:**  
+The backend streams a continuous simulation via `app.main.initialize_realtime_simulation` (REST) and `/ws/realtime` (WebSocket). Real-time mode is managed by `app.src.services.realtime_service.RealTimeService`, enabling continuous monitoring and setpoint adjustments.
+
 ## Architecture
 
 ```
@@ -16,7 +19,7 @@ This API simulates a tank mixing process with:
 │   ├── models/
 │   │   └── simulation_models.py   # Pydantic models for request/response
 │   ├── services/
-│   │   └── simulation_service.py  # Simulation business logic
+│   │   └── realtime_service.py    # Real-time simulation loop
 │   └── static/
 │       └── index.html             # Synoptic web interface
 ├── nginx/
@@ -67,79 +70,72 @@ Access at http://localhost:8000
 ### GET /synoptic
 Serves the HTML synoptic interface with SVG-based process visualization.
 
-### POST /simulation
-Executes simulation with provided parameters.
+### POST /simulation/initialize
+Prepares the real-time simulation session using `app.src.models.simulation_models.RealTimeConfig`.
 
 **Request Body:**
 ```
 {
-  "initial_conditions": {
-    "tank_a": {"level": 1.5, "concentration": null},
-    "tank_b": {"level": 1.5, "concentration": null},
-    "tank_c": {"level": 1.5, "concentration": 180.0},
-    "tank_d": {"level": 1.5, "concentration": 180.0},
-    "tank_e": {"level": 1.5, "concentration": 180.0}
-  },
-  "control_inputs": {
-    "tank_a_control": {"supply_valve": 0.5},
-    "tank_b_control": {"supply_valve": 0.5},
-    "tank_c_control": {
-      "water_pump": 0.6,
-      "brine_pump": 0.6,
-      "outlet_valve": 0.5
+  "equilibrium_point": {
+    "levels": {
+      "tank_a": 1.5,
+      "tank_b": 1.5,
+      "tank_c": 1.5,
+      "tank_d": 1.5,
+      "tank_e": 1.5
     },
-    "tank_d_control": {
-      "water_pump": 0.6,
-      "brine_pump": 0.6,
-      "outlet_valve": 0.5
+    "concentrations": {
+      "tank_c": 180,
+      "tank_d": 180,
+      "tank_e": 180
     },
-    "tank_e_control": {
-      "water_pump": 0.6,
-      "brine_pump": 0.6,
-      "outlet_valve": 0.5
+    "controls": {
+      "tank_a_supply_valve": 0.5,
+      "tank_b_supply_valve": 0.5,
+      "tank_c_water_pump": 0.6,
+      "tank_c_brine_pump": 0.6,
+      "tank_c_outlet_valve": 0.5,
+      "tank_d_water_pump": 0.6,
+      "tank_d_brine_pump": 0.6,
+      "tank_d_outlet_valve": 0.5,
+      "tank_e_water_pump": 0.6,
+      "tank_e_brine_pump": 0.6,
+      "tank_e_outlet_valve": 0.5
     }
   },
-  "simulation_config": {
-    "simulation_id": "sim_001",
-    "time_step": 0.1,
-    "duration": 3000.0,
-    "solver": "rk4",
-    "save_interval": 1.0
+  "sampling_interval": 0.5,
+  "enable_noise": false,
+  "noise_level": 0.01
+}
+```
+
+**Response:**  
+Session info and initial state.
+
+### WebSocket /ws/realtime
+Streams real-time state updates. Messages of type `state_update` are emitted by `RealTimeService.run_realtime_loop`:
+
+```
+{
+  "type": "state_update",
+  "data": {
+    "timestamp": ...,
+    "variables": { ... },
+    "controls": { ... },
+    "setpoints": { ... }
   }
 }
 ```
 
-**Response:**
-```
-{
-  "simulation_id": "sim_001",
-  "time_series": {
-    "tank_c_level": {
-      "time": [0.0, 1.0, 2.0, ...],
-      "values": [1.5, 1.51, 1.52, ...],
-      "variable_name": "Tank C Level",
-      "unit": "m"
-    },
-    ...
-  },
-  "metadata": {
-    "execution_time": 0.234,
-    "num_steps": 30000,
-    "timestamp": "2025-11-15T19:22:00.123Z",
-    "solver_used": "rk4",
-    "success": true,
-    "warnings": []
-  },
-  "status": "Simulation completed successfully"
-}
-```
+## Real-time Loop
+
+The real-time loop integrates tank dynamics continuously, applying physical clamping and optional noise in `RealTimeService._integrate_step`. Control signals are updated using a simplified proportional controller in `RealTimeService._update_controls`. State updates are sent via WebSocket at the configured interval.
 
 ## Development Notes
 
-- The `/simulation` endpoint currently returns **mocked data** based on first-order dynamics
-- Replace `_generate_mocked_data()` in `simulation_service.py` with actual tank model integration
-- Implement nonlinear ODEs from project documentation (truncated cone geometry + Torricelli discharge)
-- Add MPC controller integration when control algorithms are ready
+- Real-time mode currently relies on the physics core under `app/src/simulation` driven by `RealTimeService`
+- Implement nonlinear ODE refinements or improved MPC tuning directly in the real-time loop
+- Extend the WebSocket payload if additional diagnostics or KPIs are required
 
 ## System Requirements
 
