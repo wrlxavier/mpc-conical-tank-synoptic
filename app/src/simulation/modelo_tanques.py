@@ -1,24 +1,21 @@
 """
-modelo_tanques.py
-
 Implementa o modelo fenomenológico não-linear dos tanques do sistema:
 - 2 reservatórios cilíndricos (A e B) para utilidades
 - 3 tanques tronco-cônicos (C, D, E) de processo
 
 Cada tanque possui métodos para calcular suas propriedades geométricas,
-derivadas temporais e atualização de estados via Runge-Kutta de 4ª ordem.
-
-Baseado nas equações da Entrega 3 - Modelagem Matemática da Planta de Mistura
+derivadas temporais e atualização de estados via Runge-Kutta de 4 ordem.
 """
 
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, Sequence, Tuple, Union
 from . import parametros_sistema as params
 
+EstadoLike = Union[np.ndarray, Sequence[float], Dict[str, float]]
+ControleLike = Union[np.ndarray, Sequence[float], Dict[str, float]]
 
-# ==============================================================================
+
 # CLASSE BASE: TANQUE CILÍNDRICO
-# ==============================================================================
 
 
 class TanqueCilindrico:
@@ -56,7 +53,7 @@ class TanqueCilindrico:
         self.nivel = nivel_inicial
         self.concentracao = concentracao  # Fixo para B, zero para A
 
-        # Vazões (atualizadas externamente)
+        # Vazões
         self.vazao_entrada = 0.0  # m³/s
         self.vazao_saida = 0.0  # m³/s
 
@@ -76,7 +73,7 @@ class TanqueCilindrico:
 
     def atualizar(self, dt: float) -> Tuple[float, float]:
         """
-        Atualiza o estado do tanque usando Runge-Kutta de 4ª ordem.
+        Atualiza o estado do tanque usando Runge-Kutta de 4 ordem.
 
         Args:
             dt: passo de tempo (s)
@@ -115,27 +112,12 @@ class TanqueCilindrico:
         return f"TanqueCilindrico({self.nome}): h={self.nivel:.3f}m, V={self.get_volume():.3f}m³"
 
 
-# ==============================================================================
 # CLASSE: TANQUE TRONCO-CÔNICO
-# ==============================================================================
 
 
 class TanqueTroncoConico:
     """
     Modelo de um tanque tronco-cônico para os tanques de processo (C, D, E).
-
-    Equações dinâmicas (balanços de massa):
-
-    Nível:
-        dh/dt = (Q_agua + Q_salmoura - Q_saida) / A(h)
-
-    Concentração:
-        dC/dt = (1/V(h)) * [Q_salmoura*(C_B - C) - (Q_agua + Q_salmoura)*C]
-
-    onde:
-        A(h) = π * r(h)² com r(h) = r_inferior + (dr/dh)*h
-        V(h) = (π*h/3) * (R0² + R0*R(h) + R(h)²)
-        Q_saida = k_v * u3 * sqrt(h)  (Torricelli)
     """
 
     def __init__(
@@ -201,16 +183,12 @@ class TanqueTroncoConico:
     def calcular_raio(self, h: float) -> float:
         """
         Calcula o raio da seção transversal na altura h.
-
-        r(h) = r_inferior + (dr/dh) * h
         """
         return self.raio_inferior + self.dr_dh * h
 
     def calcular_area(self, h: float) -> float:
         """
         Calcula a área da seção transversal na altura h.
-
-        A(h) = π * r(h)²
         """
         r_h = self.calcular_raio(h)
         return np.pi * r_h**2
@@ -218,10 +196,6 @@ class TanqueTroncoConico:
     def calcular_volume(self, h: float) -> float:
         """
         Calcula o volume de líquido até a altura h.
-
-        V(h) = (π*h/3) * (R0² + R0*R(h) + R(h)²)
-
-        onde R0 = raio_inferior e R(h) = raio na altura h.
         """
         r_h = self.calcular_raio(h)
         return (np.pi * h / 3.0) * (
@@ -245,8 +219,6 @@ class TanqueTroncoConico:
         """
         Calcula dh/dt (balanço de massa total).
 
-        dh/dt = (Q_agua + Q_salmoura - Q_saida) / A(h)
-
         Returns:
             Taxa de variação do nível (m/s)
         """
@@ -262,21 +234,15 @@ class TanqueTroncoConico:
         """
         Calcula dC/dt (balanço de massa de espécie).
 
-        dC/dt = (1/V(h)) * [Q_salmoura*(CB - C) - (Q_agua + Q_salmoura)*C]
-
-        Forma simplificada:
-        dC/dt = (1/V(h)) * [Q_salmoura*CB - (Q_agua + Q_salmoura)*C]
-
         Returns:
             Taxa de variação da concentração (kg/(m³·s))
         """
         Q_agua, Q_salmoura, Q_saida = self.calcular_vazoes()
         V_h = self.calcular_volume(self.nivel)
 
-        if V_h < 1e-9:  # Evita divisão por zero
+        if V_h < 1e-9:
             return 0.0
 
-        # Termo de entrada de sal menos termo de saída de sal
         termo_entrada_sal = Q_salmoura * self.CB
         termo_saida_sal = self.concentracao * (Q_agua + Q_salmoura)
 
@@ -284,7 +250,7 @@ class TanqueTroncoConico:
 
     def atualizar(self, dt: float) -> Tuple[float, float]:
         """
-        Atualiza os estados do tanque usando Runge-Kutta de 4ª ordem (RK4).
+        Atualiza os estados do tanque usando Runge-Kutta de 4 ordem (RK4).
 
         Args:
             dt: passo de tempo (s)
@@ -311,8 +277,8 @@ class TanqueTroncoConico:
         # Atualização final do nível
         novo_nivel = h0 + (k1_h + 2 * k2_h + 2 * k3_h + k4_h) * dt / 6.0
 
-        # ===== RK4 para concentração =====
-        self.nivel = h0  # Restaura para calcular derivadas de C
+        # RK4 para concentração
+        self.nivel = h0
         self.concentracao = C0
 
         k1_C = self.derivada_concentracao()
@@ -329,10 +295,8 @@ class TanqueTroncoConico:
         self.concentracao = C0 + k3_C * dt
         k4_C = self.derivada_concentracao()
 
-        # Atualização final da concentração
         nova_concentracao = C0 + (k1_C + 2 * k2_C + 2 * k3_C + k4_C) * dt / 6.0
 
-        # Aplica atualizações com saturação
         self.nivel = np.clip(novo_nivel, 0.0, self.altura_max)
         self.concentracao = np.clip(nova_concentracao, 0.0, self.CB)
 
@@ -347,9 +311,7 @@ class TanqueTroncoConico:
         )
 
 
-# ==============================================================================
 # CLASSE: SISTEMA COMPLETO (5 TANQUES)
-# ==============================================================================
 
 
 class SistemaCompleto:
@@ -425,6 +387,110 @@ class SistemaCompleto:
 
         self.tanques_utilidades = {"A": self.tanque_A, "B": self.tanque_B}
 
+        # Caches para integração com a API (estado vetor e último controle aplicado)
+        self._estado_cache = params.ESTADO_OPERACIONAL_VETOR.copy()
+        self._controle_cache = self._controles_padrao()
+
+    # ------------------------------------------------------------------
+    # Métodos auxiliares internos
+    # ------------------------------------------------------------------
+
+    def _controles_padrao(self) -> Dict[str, float]:
+        return {
+            nome: float(valor)
+            for nome, valor in zip(
+                params.ORDEM_CONTROLES, params.CONTROLE_OPERACIONAL_VETOR
+            )
+        }
+
+    def _montar_estado_dict(self) -> Dict[str, float]:
+        return {
+            "hA": float(self.tanque_A.nivel),
+            "hB": float(self.tanque_B.nivel),
+            "hC": float(self.tanque_C.nivel),
+            "CC": float(self.tanque_C.concentracao),
+            "hD": float(self.tanque_D.nivel),
+            "CD": float(self.tanque_D.concentracao),
+            "hE": float(self.tanque_E.nivel),
+            "CE": float(self.tanque_E.concentracao),
+        }
+
+    def _montar_estado_array(self) -> np.ndarray:
+        estado_dict = self._montar_estado_dict()
+        return np.array([estado_dict[ch] for ch in params.ORDEM_ESTADOS], dtype=float)
+
+    def _atualizar_estado_cache(self) -> np.ndarray:
+        self._estado_cache = self._montar_estado_array()
+        return self._estado_cache
+
+    def _converter_estado_para_array(self, estado: EstadoLike) -> np.ndarray:
+        if estado is None:
+            return self._estado_cache.copy()
+
+        if isinstance(estado, dict):
+            vetor = np.array(
+                [
+                    estado.get(ch, self._estado_cache[idx])
+                    for idx, ch in enumerate(params.ORDEM_ESTADOS)
+                ],
+                dtype=float,
+            )
+        else:
+            vetor = np.array(estado, dtype=float).flatten()
+
+        if vetor.size != len(params.ORDEM_ESTADOS):
+            raise ValueError(
+                f"Estado deve possuir {len(params.ORDEM_ESTADOS)} posições; recebido {vetor.size}."
+            )
+
+        return vetor
+
+    def _converter_controles_para_dict(
+        self, controles: ControleLike
+    ) -> Dict[str, float]:
+        if controles is None:
+            valores = [self._controle_cache[nome] for nome in params.ORDEM_CONTROLES]
+        elif isinstance(controles, dict):
+            valores = [
+                controles.get(nome, self._controle_cache[nome])
+                for nome in params.ORDEM_CONTROLES
+            ]
+        else:
+            valores = np.array(controles, dtype=float).flatten()
+            if valores.size != len(params.ORDEM_CONTROLES):
+                raise ValueError(
+                    f"Controle deve possuir {len(params.ORDEM_CONTROLES)} posições; recebido {valores.size}."
+                )
+
+        controle_dict = {
+            nome: float(valores[idx]) for idx, nome in enumerate(params.ORDEM_CONTROLES)
+        }
+
+        limites_map = {
+            "uA": ("uA_min", "uA_max"),
+            "uB": ("uB_min", "uB_max"),
+            "uC1": ("u1_min", "u1_max"),
+            "uC2": ("u2_min", "u2_max"),
+            "uC3": ("u3_min", "u3_max"),
+            "uD1": ("u1_min", "u1_max"),
+            "uD2": ("u2_min", "u2_max"),
+            "uD3": ("u3_min", "u3_max"),
+            "uE1": ("u1_min", "u1_max"),
+            "uE2": ("u2_min", "u2_max"),
+            "uE3": ("u3_min", "u3_max"),
+        }
+
+        for chave, (lim_min, lim_max) in limites_map.items():
+            controle_dict[chave] = float(
+                np.clip(
+                    controle_dict[chave],
+                    params.LIMITES_ATUADORES[lim_min],
+                    params.LIMITES_ATUADORES[lim_max],
+                )
+            )
+
+        return controle_dict
+
     def atualizar_sistema(self, dt: float, controles: dict) -> dict:
         """
         Atualiza todos os tanques do sistema.
@@ -482,8 +548,8 @@ class SistemaCompleto:
         hD, CD = self.tanque_D.atualizar(dt)
         hE, CE = self.tanque_E.atualizar(dt)
 
-        # Retorna todos os estados
-        return {
+        # Atualiza caches e retorna snapshot
+        estados = {
             "hA": hA,
             "hB": hB,
             "hC": hC,
@@ -493,90 +559,78 @@ class SistemaCompleto:
             "hE": hE,
             "CE": CE,
         }
+        self._atualizar_estado_cache()
+        return estados
 
     def get_estados(self) -> dict:
         """Retorna os estados atuais de todos os tanques."""
-        return {
-            "hA": self.tanque_A.nivel,
-            "hB": self.tanque_B.nivel,
-            "hC": self.tanque_C.nivel,
-            "CC": self.tanque_C.concentracao,
-            "hD": self.tanque_D.nivel,
-            "CD": self.tanque_D.concentracao,
-            "hE": self.tanque_E.nivel,
-            "CE": self.tanque_E.concentracao,
-        }
+        self._atualizar_estado_cache()
+        return self._montar_estado_dict()
 
-    # ==== Métodos de compatibilidade com a API anterior ====
-
-    def definir_estado(self, estado: np.ndarray) -> None:
-        """Define o vetor de estados [hA, hB, hC, CC, hD, CD, hE, CE]."""
-        if len(estado) != 8:
-            raise ValueError(
-                "O vetor de estado deve conter 8 elementos: hA, hB, hC, CC, hD, CD, hE, CE"
-            )
-
-        hA, hB, hC, CC, hD, CD, hE, CE = (float(x) for x in estado)
-
-        self.tanque_A.nivel = np.clip(hA, 0.0, self.tanque_A.altura_max)
-        self.tanque_B.nivel = np.clip(hB, 0.0, self.tanque_B.altura_max)
-
-        self.tanque_C.nivel = np.clip(hC, 0.0, self.tanque_C.altura_max)
-        self.tanque_C.concentracao = np.clip(CC, 0.0, params.CB)
-
-        self.tanque_D.nivel = np.clip(hD, 0.0, self.tanque_D.altura_max)
-        self.tanque_D.concentracao = np.clip(CD, 0.0, params.CB)
-
-        self.tanque_E.nivel = np.clip(hE, 0.0, self.tanque_E.altura_max)
-        self.tanque_E.concentracao = np.clip(CE, 0.0, params.CB)
+    # ------------------------------------------------------------------
+    # Métodos de integração compatíveis com a API
+    # ------------------------------------------------------------------
 
     def obter_estado(self) -> np.ndarray:
-        """Retorna o vetor de estados no formato utilizado pelo simulador legado."""
-        return np.array(
-            [
-                self.tanque_A.nivel,
-                self.tanque_B.nivel,
-                self.tanque_C.nivel,
-                self.tanque_C.concentracao,
-                self.tanque_D.nivel,
-                self.tanque_D.concentracao,
-                self.tanque_E.nivel,
-                self.tanque_E.concentracao,
-            ],
-            dtype=float,
+        """Retorna o estado completo como vetor na ordem esperada pela API."""
+        return self._atualizar_estado_cache().copy()
+
+    def definir_estado(self, estado: EstadoLike) -> None:
+        """Define o estado completo a partir de um vetor ou dicionário."""
+        vetor = self._converter_estado_para_array(estado)
+
+        self.tanque_A.nivel = float(np.clip(vetor[0], 0.0, self.tanque_A.altura_max))
+        self.tanque_B.nivel = float(np.clip(vetor[1], 0.0, self.tanque_B.altura_max))
+
+        self.tanque_C.nivel = float(np.clip(vetor[2], 0.0, self.tanque_C.altura_max))
+        self.tanque_C.concentracao = float(
+            np.clip(vetor[3], params.LIMITES_CONCENTRACAO["C_min"], params.CB)
         )
 
+        self.tanque_D.nivel = float(np.clip(vetor[4], 0.0, self.tanque_D.altura_max))
+        self.tanque_D.concentracao = float(
+            np.clip(vetor[5], params.LIMITES_CONCENTRACAO["C_min"], params.CB)
+        )
+
+        self.tanque_E.nivel = float(np.clip(vetor[6], 0.0, self.tanque_E.altura_max))
+        self.tanque_E.concentracao = float(
+            np.clip(vetor[7], params.LIMITES_CONCENTRACAO["C_min"], params.CB)
+        )
+
+        self._atualizar_estado_cache()
+
     def integrar_passo(
-        self, u: np.ndarray, dt: float, metodo: str = "euler"
+        self, controles: ControleLike, dt: float, metodo: str = "rk4"
     ) -> np.ndarray:
-        """Integra um passo do modelo físico usando o dicionário de controles legado."""
-        controles = self._converter_controles(u)
-        self.atualizar_sistema(dt, controles)
+        """
+        Integra o sistema para um passo de tempo, retornando o novo estado vetor.
+
+        Args:
+            controles: controles em vetor (ordem API) ou dict
+            dt: passo de integração total (s)
+            metodo: "rk4" ou "euler" (parâmetro para compatibilidade)
+        """
+
+        if dt <= 0.0:
+            return self.obter_estado()
+
+        controles_dict = self._converter_controles_para_dict(controles)
+        self._controle_cache = controles_dict.copy()
+
+        metodo = (metodo or "rk4").lower()
+        if metodo not in {"rk4", "euler"}:
+            raise ValueError("Método de integração deve ser 'rk4' ou 'euler'.")
+
+        # Euler utiliza passo único; RK4 usa subpassos configurados
+        passo_referencia = dt if metodo == "euler" else params.DT_INTEGRACAO
+        tempo_restante = float(dt)
+
+        while tempo_restante > 1e-9:
+            passo = min(passo_referencia, tempo_restante)
+            self.atualizar_sistema(passo, controles_dict)
+            tempo_restante -= passo
+
         return self.obter_estado()
-
-    def _converter_controles(self, u: np.ndarray) -> Dict[str, float]:
-        """Converte o vetor de controles legado em dicionário usado internamente."""
-        if len(u) != 11:
-            raise ValueError(
-                "O vetor de controles deve conter 11 elementos: uA, uB, uC1-3, uD1-3, uE1-3"
-            )
-
-        u = np.asarray(u, dtype=float)
-        u = np.clip(u, 0.0, 1.0)
-
-        return {
-            "uA": u[0],
-            "uB": u[1],
-            "uC1": u[2],
-            "uC2": u[3],
-            "uC3": u[4],
-            "uD1": u[5],
-            "uD2": u[6],
-            "uD3": u[7],
-            "uE1": u[8],
-            "uE2": u[9],
-            "uE3": u[10],
-        }
 
     def __repr__(self):
         return (
@@ -592,44 +646,3 @@ class SistemaCompleto:
             f"  {self.tanque_E}\n"
             f"{'='*70}"
         )
-
-
-# ==============================================================================
-# TESTES
-# ==============================================================================
-
-if __name__ == "__main__":
-    print("=" * 70)
-    print("TESTE DO MODELO DE TANQUES")
-    print("=" * 70)
-
-    # Cria sistema
-    sistema = SistemaCompleto()
-    print("\nEstado inicial:")
-    print(sistema)
-
-    # Simula 100 segundos com controles no ponto de operação
-    dt = params.DT_INTEGRACAO
-    tempo_total = 100.0
-    n_passos = int(tempo_total / dt)
-
-    controles_eq = {
-        "uA": params.CONDICOES_INICIAIS["uA_0"],
-        "uB": params.CONDICOES_INICIAIS["uB_0"],
-        "uC1": params.CONDICOES_INICIAIS["uC1_0"],
-        "uC2": params.CONDICOES_INICIAIS["uC2_0"],
-        "uC3": params.CONDICOES_INICIAIS["uC3_0"],
-        "uD1": params.CONDICOES_INICIAIS["uD1_0"],
-        "uD2": params.CONDICOES_INICIAIS["uD2_0"],
-        "uD3": params.CONDICOES_INICIAIS["uD3_0"],
-        "uE1": params.CONDICOES_INICIAIS["uE1_0"],
-        "uE2": params.CONDICOES_INICIAIS["uE2_0"],
-        "uE3": params.CONDICOES_INICIAIS["uE3_0"],
-    }
-
-    print(f"\nSimulando {tempo_total}s com controles em equilíbrio...")
-    for _ in range(n_passos):
-        sistema.atualizar_sistema(dt, controles_eq)
-
-    print("\nEstado final (deve permanecer próximo ao inicial em equilíbrio):")
-    print(sistema)
