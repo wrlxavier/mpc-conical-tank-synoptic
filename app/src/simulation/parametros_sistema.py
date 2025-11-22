@@ -1,31 +1,28 @@
 """
-parametros_sistema.py
-
 Centraliza todos os parâmetros físicos, operacionais e de controle do sistema
 de 5 tanques tronco-cônicos para simulação de controle MPC.
-
-Baseado na Entrega 3 - Proposta da Estrutura de Controle
 """
 
 import numpy as np
 
-# ==============================================================================
+
 # PARÂMETROS DE SIMULAÇÃO
-# ==============================================================================
-
-# Tempo total de simulação (segundos)
-TEMPO_TOTAL = 3000.0  # ~50 minutos
-
-# Passo de integração para o modelo não-linear (segundos)
-DT_INTEGRACAO = 0.5  # Refinado para capturar dinâmica rápida
-
-# Período de amostragem do controlador MPC (segundos)
-TS_CONTROLADOR = 5.0  # Adequado para tau_h = 961s e tau_C = 370s
 
 
-# ==============================================================================
+# Tempo total de simulação
+TEMPO_TOTAL = 3000.0  # segundos, ~50 minutos apenas como sugestão
+
+# Passo de integração para o modelo não-linear
+DT_INTEGRACAO = 0.5  # segundos, 10 x mais rápido que o controlador
+
+# Período de amostragem do controlador MPC
+TS_CONTROLADOR = 5.0  # segundos
+
+# Adequado para tau_h = 961s e tau_C = 370s
+
+
 # PARÂMETROS GEOMÉTRICOS DOS TANQUES
-# ==============================================================================
+
 
 # Tanques de processo C, D, E (tronco-cônicos, todos idênticos)
 TANQUES_PROCESSO = {
@@ -69,9 +66,8 @@ TANQUES_UTILIDADES = {
 }
 
 
-# ==============================================================================
 # COEFICIENTES DE DESCARGA E GANHOS DE ATUADORES
-# ==============================================================================
+
 
 # Coeficientes de descarga das válvulas (lei de Torricelli: Q = kv * u * sqrt(h))
 # Para tanques de processo C, D, E
@@ -96,9 +92,8 @@ KV_SUPRIMENTO_A = 0.048  # m³/s (vazo máxima quando uA=1)
 KV_SUPRIMENTO_B = 0.048  # m³/s (vazo máxima quando uB=1)
 
 
-# ==============================================================================
 # PONTO DE OPERAÇÃO NOMINAL
-# ==============================================================================
+
 
 # Estados de equilíbrio
 PONTO_OPERACAO = {
@@ -124,9 +119,8 @@ PONTO_OPERACAO = {
 CB = 360.0  # kg/m³
 
 
-# ==============================================================================
 # PARÂMETROS DO MODELO LINEARIZADO
-# ==============================================================================
+
 
 # Autovalores do sistema linearizado (elementos da diagonal de A)
 AUTOVALORES = {
@@ -198,14 +192,13 @@ C_CONTINUA = np.eye(8)
 D_CONTINUA = np.zeros((8, 11))
 
 
-# ==============================================================================
 # LIMITES FÍSICOS DOS ATUADORES E VARIÁVEIS
-# ==============================================================================
+
 
 # Limites de nível
 LIMITES_NIVEL = {
-    "h_min": 0.2,  # m - nível mínimo seguro
-    "h_max": 2.8,  # m - nível máximo seguro (margem antes de 3.0m)
+    "h_min": 0.3,  # m - nível mínimo seguro
+    "h_max": 2.7,  # m - nível máximo seguro (margem antes de 3.0m)
 }
 
 # Limites de concentração (informativo)
@@ -234,59 +227,44 @@ LIMITES_ATUADORES = {
 
 # Limites de taxa de variação (slew rate) para suavidade
 LIMITES_VARIACAO = {
-    "delta_u1_max": 0.2,  # variação máxima por amostra (bomba água)
-    "delta_u2_max": 0.2,  # variação máxima por amostra (bomba salmoura)
-    "delta_u3_max": 0.15,  # variação máxima por amostra (válvula)
+    "delta_u1_max": 0.5,
+    "delta_u2_max": 0.5,
+    "delta_u3_max": 0.4,
 }
 
 
-# ==============================================================================
 # PARÂMETROS DO CONTROLADOR MPC
-# ==============================================================================
+
 
 # Horizontes de predição e controle
 MPC_HORIZONTES = {
-    "Np": 50,  # Horizonte de predição (200s = 40 * 5s)
-    "Nc": 20,  # Horizonte de controle (100s = 20 * 5s)
+    "Np": 40,
+    "Nc": 20,
 }
 
-# Pesos da função custo (matrizes diagonais Q, R, I)
-# Q penaliza desvio das saídas em relação à referência
-# R penaliza esforço de controle
-# I penaliza erro acumulado (termo integral para offset-free)
+# Pesos da função custo, matrizes diagonais do MPC Q, R, I
+mpc_pesos_config_geral = {
+    "Q": np.diag([300, 1000]),
+    "R": np.diag([500.0, 500.0, 1000.0]),
+    "I": np.diag([75.0, 250.0]),
+}
 
+
+# Todos os tanques usam os mesmos pesos genéricos
+# mas poderiam ser ajustados individualmente se necessário
+# dependendo da dinâmica desejada para cada tanque
 MPC_PESOS = {
-    # Para cada tanque de processo (C, D, E)
-    "C": {
-        "Q": np.diag([250.0, 180.0]),
-        "R": np.diag([300.0, 300.0, 600.0]),
-        "I": np.diag([60.0, 40.0]),
-    },
-    "D": {
-        "Q": np.diag([250.0, 180.0]),
-        "R": np.diag([300.0, 300.0, 600.0]),
-        "I": np.diag([60.0, 40.0]),
-    },
-    "E": {
-        "Q": np.diag([250.0, 180.0]),
-        "R": np.diag([300.0, 300.0, 600.0]),
-        "I": np.diag([60.0, 40.0]),
-    },
+    "C": mpc_pesos_config_geral,
+    "D": mpc_pesos_config_geral,
+    "E": mpc_pesos_config_geral,
 }
 
-# Pergunta: como fazer o mpc ser mais potente no controle do nivel e concentracao?
-# Resposta: aumentar os pesos Q e I, principalmente em C (mais crítico)
-
-LIMITE_OVERSHOOT = 0.08  # valor final permitido no overshoot
-LIMITE_UNDERSHOOT = 0.08  # valor final permitido no undershoot
-
-# Nota: Peso maior em R[2] (u3) para suavizar ação da válvula e evitar chattering
-# Pesos Q e I podem ser ajustados durante sintonia para atender requisitos R1-R4
+LIMITE_OVERSHOOT = 0.01
+LIMITE_UNDERSHOOT = 0.01
 
 
-# ==============================================================================
-# REQUISITOS DE DESEMPENHO (R1-R4)
-# ==============================================================================
+# REQUISITOS DE DESEMPENHO (R1-R4 do entrega 3)
+
 
 REQUISITOS = {
     "R1": {
@@ -311,9 +289,8 @@ REQUISITOS = {
 }
 
 
-# ==============================================================================
 # CONDIÇÕES INICIAIS PADRÃO
-# ==============================================================================
+
 
 CONDICOES_INICIAIS = {
     # Reservatórios (em equilíbrio)
@@ -341,9 +318,61 @@ CONDICOES_INICIAIS = {
 }
 
 
-# ==============================================================================
+# CONVENÇÕES PARA INTEGRAÇÃO COM A API
+
+
+# Ordem dos estados esperada pela camada de serviços
+ORDEM_ESTADOS = ("hA", "hB", "hC", "CC", "hD", "CD", "hE", "CE")
+
+# Ordem dos controles esperada pela camada de serviços
+ORDEM_CONTROLES = (
+    "uA",
+    "uB",
+    "uC1",
+    "uC2",
+    "uC3",
+    "uD1",
+    "uD2",
+    "uD3",
+    "uE1",
+    "uE2",
+    "uE3",
+)
+
+
+ESTADO_OPERACIONAL_VETOR = np.array(
+    [
+        PONTO_OPERACAO["hA_eq"],
+        PONTO_OPERACAO["hB_eq"],
+        PONTO_OPERACAO["h_eq"],
+        PONTO_OPERACAO["C_eq"],
+        PONTO_OPERACAO["h_eq"],
+        PONTO_OPERACAO["C_eq"],
+        PONTO_OPERACAO["h_eq"],
+        PONTO_OPERACAO["C_eq"],
+    ],
+    dtype=float,
+)
+
+CONTROLE_OPERACIONAL_VETOR = np.array(
+    [
+        PONTO_OPERACAO["uA_eq"],
+        PONTO_OPERACAO["uB_eq"],
+        PONTO_OPERACAO["u1_eq"],
+        PONTO_OPERACAO["u2_eq"],
+        PONTO_OPERACAO["u3_eq"],
+        PONTO_OPERACAO["u1_eq"],
+        PONTO_OPERACAO["u2_eq"],
+        PONTO_OPERACAO["u3_eq"],
+        PONTO_OPERACAO["u1_eq"],
+        PONTO_OPERACAO["u2_eq"],
+        PONTO_OPERACAO["u3_eq"],
+    ],
+    dtype=float,
+)
+
+
 # FUNÇÕES AUXILIARES
-# ==============================================================================
 
 
 def calcular_area_tronco_conico(h, r_inferior, r_superior, h_maxima):
@@ -381,7 +410,6 @@ def calcular_volume_tronco_conico(h, r_inferior, r_superior, h_maxima):
     dr_dh = (r_superior - r_inferior) / h_maxima
     r_h = r_inferior + dr_dh * h
 
-    # V = (pi*h/3) * (R0² + R0*Rh + Rh²)
     return (np.pi * h / 3.0) * (r_inferior**2 + r_inferior * r_h + r_h**2)
 
 
@@ -400,42 +428,14 @@ def validar_limites(valor, minimo, maximo):
     return np.clip(valor, minimo, maximo)
 
 
-# ==============================================================================
 # INFORMAÇÕES ADICIONAIS
-# ==============================================================================
+
 
 INFO_SISTEMA = {
-    "autor": "Sistema de Controle MPC para Tanques Tronco-Cônicos",
+    "autor": "Warley Xavier; Marcelo Rehwagen",
     "disciplina": "Técnicas de Controle de Processos Industriais",
     "versao": "1.0",
     "data": "Novembro 2025",
     "descricao": "Simulação programada de 5 tanques (2 cilíndricos + 3 tronco-cônicos) "
     "com controle MPC multivarável de nível e concentração.",
 }
-
-if __name__ == "__main__":
-    # Testes básicos
-    print("=" * 70)
-    print(INFO_SISTEMA["descricao"])
-    print("=" * 70)
-    print(f"\nTempo total de simulação: {TEMPO_TOTAL}s")
-    print(f"Período de amostragem MPC: {TS_CONTROLADOR}s")
-    print(f"Passo de integração: {DT_INTEGRACAO}s")
-    print(f"\nConstantes de tempo:")
-    print(
-        f"  - Nível (τ_h): {CONSTANTES_TEMPO['tau_h']}s (~{CONSTANTES_TEMPO['tau_h']/60:.1f} min)"
-    )
-    print(
-        f"  - Concentração (τ_C): {CONSTANTES_TEMPO['tau_C']}s (~{CONSTANTES_TEMPO['tau_C']/60:.1f} min)"
-    )
-    print(f"\nPonto de operação nominal:")
-    print(f"  - Nível: {PONTO_OPERACAO['h_eq']}m")
-    print(f"  - Concentração: {PONTO_OPERACAO['C_eq']}kg/m³")
-    print(f"\nHorizontes MPC:")
-    print(
-        f"  - Predição (Np): {MPC_HORIZONTES['Np']} amostras ({MPC_HORIZONTES['Np']*TS_CONTROLADOR}s)"
-    )
-    print(
-        f"  - Controle (Nc): {MPC_HORIZONTES['Nc']} amostras ({MPC_HORIZONTES['Nc']*TS_CONTROLADOR}s)"
-    )
-    print("\n" + "=" * 70)
